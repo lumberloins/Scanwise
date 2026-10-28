@@ -3,6 +3,14 @@
  */
 class ScanUI {
     constructor() {
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => this.init());
+        } else {
+            this.init();
+        }
+    }
+
+    init() {
         this.setupTabs();
     }
 
@@ -48,9 +56,17 @@ class ScanUI {
             document.getElementById('verdict-recommendation').textContent = 'Scan a barcode to evaluate scanner configuration, EMR framing, and GS1 data integrity.';
         }
 
-        document.getElementById('structured-data-table-container').innerHTML = '<p class="empty-state">No barcode parsed yet.</p>';
-        document.getElementById('framing-results-container').innerHTML = '<p class="empty-state">No framing data available.</p>';
-        document.getElementById('raw-inspector-container').innerHTML = '<p class="empty-state">No raw stream inspected yet.</p>';
+        const structContainer = document.getElementById('structured-data-table-container');
+        if (structContainer) structContainer.innerHTML = '<p class="empty-state">No barcode parsed yet.</p>';
+
+        const framingContainer = document.getElementById('framing-results-container');
+        if (framingContainer) framingContainer.innerHTML = '<p class="empty-state">No framing data available.</p>';
+
+        const rawContainer = document.getElementById('raw-inspector-container');
+        if (rawContainer) rawContainer.innerHTML = '<p class="empty-state">No raw stream inspected yet.</p>';
+
+        const forensicContainer = document.getElementById('advanced-forensic-container');
+        if (forensicContainer) forensicContainer.innerHTML = '<p class="empty-state">Perform a scan to inspect real-time byte stream and suffix forensics.</p>';
     }
 
     renderResults(data) {
@@ -58,6 +74,7 @@ class ScanUI {
         this.renderStructuredData(data.gs1_data, data.symbology);
         this.renderFraming(data.framing, data.symbology, data.timing);
         this.renderRawInspector(data.anomalies, data.raw_dump);
+        this.renderAdvancedForensics(data, data.key_events || []);
 
         // Play audio feedback
         if (window.scanAudio) {
@@ -73,6 +90,7 @@ class ScanUI {
         const banner = document.getElementById('verdict-banner');
         const headline = document.getElementById('verdict-headline');
         const recommendation = document.getElementById('verdict-recommendation');
+        if (!banner || !headline || !recommendation) return;
 
         banner.className = `verdict-banner verdict-${verdict.level || 'warning'}`;
         headline.textContent = verdict.headline;
@@ -81,6 +99,7 @@ class ScanUI {
 
     renderStructuredData(gs1Data, symbology) {
         const container = document.getElementById('structured-data-table-container');
+        if (!container) return;
         
         let html = `<p><strong>Symbology:</strong> ${symbology.symbology_name} (${symbology.standard})</p>`;
         if (symbology.has_aim_id) {
@@ -129,6 +148,7 @@ class ScanUI {
 
     renderFraming(framing, symbology, timing) {
         const container = document.getElementById('framing-results-container');
+        if (!container) return;
 
         const matchStatus = framing.profile_matched ? 
             '<span class="badge badge-subtle" style="color:#10b981">Profile Matched</span>' : 
@@ -162,6 +182,7 @@ class ScanUI {
 
     renderRawInspector(anomalies, rawDump) {
         const container = document.getElementById('raw-inspector-container');
+        if (!container) return;
 
         let badgesHtml = '';
         if (anomalies.control_characters && anomalies.control_characters.length > 0) {
@@ -192,6 +213,44 @@ class ScanUI {
                 <div style="margin-top: 0.5rem;">
                     ${badgesHtml}
                 </div>
+            </div>
+        `;
+    }
+
+    renderAdvancedForensics(data, keyEvents) {
+        const container = document.getElementById('advanced-forensic-container');
+        if (!container) return;
+        
+        let terminalHtml = '';
+        if (data.anomalies && data.anomalies.control_characters) {
+            data.anomalies.control_characters.forEach(c => {
+                let cls = c.is_safe ? 'badge-delimiter' : 'badge-harmful';
+                if (c.category === 'line_terminator') cls = 'badge-terminator';
+                terminalHtml += `<span class="char-badge ${cls}">${c.symbol}</span>`;
+            });
+        }
+
+        container.innerHTML = `
+            <div style="margin-bottom: 1.5rem;">
+                <h5>Real-Time Byte Stream Terminal</h5>
+                <div style="background: #090d16; border: 1px solid var(--border-color); padding: 1rem; border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 0.9rem; margin-top: 0.5rem; white-space: pre-wrap; word-break: break-all;">
+                    ${data.raw_dump.ascii}
+                </div>
+            </div>
+            <div style="margin-bottom: 1.5rem;">
+                <h5>Suffix & Postamble Forensics</h5>
+                <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+                    Detected Suffix: <code>${data.framing.suffix_detected || '(None)'}</code> (Hex: <code>${data.framing.raw_suffix_hex || 'N/A'}</code>). 
+                    If this includes a TAB (\\t) or Form Feed (\\f), it will cause browser focus shifts or tab-switching.
+                </p>
+            </div>
+            <div>
+                <h5>Timing & Burst Statistics</h5>
+                <p style="font-size: 0.875rem; color: var(--text-muted);">
+                    Total burst duration: <strong>${data.timing.total_burst_time_ms} ms</strong> | 
+                    Average inter-character arrival: <strong>${data.timing.avg_inter_char_ms} ms</strong> | 
+                    Jitter detected: <strong>${data.timing.jitter_detected ? 'YES (VDI Latency Warning)' : 'NO'}</strong>
+                </p>
             </div>
         `;
     }

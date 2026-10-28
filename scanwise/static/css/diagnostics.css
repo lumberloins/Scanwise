@@ -80,6 +80,16 @@
     background-color: var(--bg-secondary);
 }
 
+.tab-btn.tab-advanced {
+    color: #60a5fa;
+    background-color: rgba(59, 130, 246, 0.05);
+}
+
+.tab-btn.tab-advanced.active {
+    border-bottom-color: #60a5fa;
+    background-color: var(--bg-secondary);
+}
+
 .tab-content {
     padding: 1.5rem;
 }
@@ -92,10 +102,10 @@
     display: block;
 }
 
-.tab-pane h4 {
+.tab-pane h4, .tab-pane h5 {
     font-size: 1rem;
     font-weight: 600;
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
     color: var(--text-main);
 }
 
