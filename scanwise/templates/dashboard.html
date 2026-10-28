@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-container">
+    <section class="scan-section">
+        <h2>Scan Test Target Area</h2>
+        <p class="instruction-text">Click below and scan a barcode with your handheld scanner, or paste raw wedge data.</p>
+        <div class="scan-input-wrapper">
+            <textarea id="scan-input-box" placeholder="Waiting for barcode scan..." autofocus rows="3"></textarea>
+            <button id="clear-btn" class="btn btn-secondary">Clear</button>
+        </div>
+    </section>
+
+    <section id="verdict-banner" class="verdict-banner verdict-idle">
+        <div class="verdict-content">
+            <h3 id="verdict-headline">Ready for Scan Analysis</h3>
+            <p id="verdict-recommendation">Scan a barcode to evaluate scanner configuration, EMR framing, and GS1 data integrity.</p>
+        </div>
+    </section>
+
+    <div class="tabs-container">
+        <div class="tab-headers">
+            <button class="tab-btn active" data-target="tab-structured">Structured Data</button>
+            <button class="tab-btn" data-target="tab-framing">Framing & Symbology</button>
+            <button class="tab-btn" data-target="tab-raw">Raw Hex & Inspector</button>
+        </div>
+
+        <div class="tab-content">
+            <div id="tab-structured" class="tab-pane active">
+                <h4>Extracted GS1 / Medical Data Elements</h4>
+                <div id="structured-data-table-container">
+                    <p class="empty-state">No barcode parsed yet.</p>
+                </div>
+            </div>
+
+            <div id="tab-framing" class="tab-pane">
+                <h4>Scanner Framing & Symbology Diagnostics</h4>
+                <div id="framing-results-container">
+                    <p class="empty-state">No framing data available.</p>
+                </div>
+            </div>
+
+            <div id="tab-raw" class="tab-pane">
+                <h4>Raw Byte & Control Character Inspector</h4>
+                <div id="raw-inspector-container">
+                    <p class="empty-state">No raw stream inspected yet.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

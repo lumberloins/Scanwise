@@ -1,0 +1,30 @@
+{
+  "epic_emr": {
+    "id": "epic_emr",
+    "name": "Epic EMR (Hyperspace / Rover)",
+    "expected_prefix": "/DATA/",
+    "expected_suffix": "\r",
+    "description": "Standard Epic clinical workstation wedge configuration requiring /DATA/ wrapping and Carriage Return."
+  },
+  "cerner_millennium": {
+    "id": "cerner_millennium",
+    "name": "Cerner Millennium / Oracle Health",
+    "expected_prefix": "~",
+    "expected_suffix": "\r",
+    "description": "Cerner barcode reader profile with tilde prefix and enter terminator."
+  },
+  "meditech_expanse": {
+    "id": "meditech_expanse",
+    "name": "Meditech Expanse",
+    "expected_prefix": "",
+    "expected_suffix": "\r",
+    "description": "Meditech Expanse wedge configuration with standard Enter suffix."
+  },
+  "generic_gs1": {
+    "id": "generic_gs1",
+    "name": "Generic GS1 / Pass-Through (Diagnostic)",
+    "expected_prefix": "",
+    "expected_suffix": "",
+    "description": "Unrestricted diagnostic mode for raw wedge capture without profile enforcement."
+  }
+}

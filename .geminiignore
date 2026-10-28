@@ -1,0 +1,10 @@
+# Gemini CLI Ignore File
+__pycache__/
+*.pyc
+.pytest_cache/
+venv/
+.venv/
+dist/
+build/
+*.log
+.env
