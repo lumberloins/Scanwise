@@ -196,15 +196,21 @@ class ScanUI {
         }
 
         container.innerHTML = `
-            <div style="margin-bottom: 1rem;">
-                <strong>ASCII Visualization:</strong><br>
-                <div style="background: var(--bg-primary); padding: 1rem; border-radius: var(--radius-sm); font-family: var(--font-mono); margin-top: 0.5rem; word-break: break-all;">
+            <div style="margin-bottom: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <strong>ASCII Visualization:</strong>
+                    <button id="copy-ascii-btn" class="btn btn-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.75rem;">Copy ASCII</button>
+                </div>
+                <div id="ascii-box" style="background: var(--bg-primary); padding: 1rem; border-radius: var(--radius-sm); font-family: var(--font-mono); word-break: break-all;">
                     ${rawDump.ascii}
                 </div>
             </div>
-            <div style="margin-bottom: 1rem;">
-                <strong>Hexadecimal Dump:</strong><br>
-                <div style="background: var(--bg-primary); padding: 1rem; border-radius: var(--radius-sm); font-family: var(--font-mono); margin-top: 0.5rem; word-break: break-all; color: #60a5fa;">
+            <div style="margin-bottom: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <strong>Hexadecimal Dump:</strong>
+                    <button id="copy-hex-btn" class="btn btn-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.75rem;">Copy Hex</button>
+                </div>
+                <div id="hex-box" style="background: var(--bg-primary); padding: 1rem; border-radius: var(--radius-sm); font-family: var(--font-mono); word-break: break-all; color: #60a5fa;">
                     ${rawDump.hex}
                 </div>
             </div>
@@ -215,6 +221,27 @@ class ScanUI {
                 </div>
             </div>
         `;
+
+        // Bind copy button events
+        const copyAsciiBtn = document.getElementById('copy-ascii-btn');
+        if (copyAsciiBtn) {
+            copyAsciiBtn.addEventListener('click', () => {
+                navigator.clipboard.writeText(rawDump.ascii).then(() => {
+                    copyAsciiBtn.textContent = 'Copied!';
+                    setTimeout(() => copyAsciiBtn.textContent = 'Copy ASCII', 2000);
+                });
+            });
+        }
+
+        const copyHexBtn = document.getElementById('copy-hex-btn');
+        if (copyHexBtn) {
+            copyHexBtn.addEventListener('click', () => {
+                navigator.clipboard.writeText(rawDump.hex).then(() => {
+                    copyHexBtn.textContent = 'Copied!';
+                    setTimeout(() => copyHexBtn.textContent = 'Copy Hex', 2000);
+                });
+            });
+        }
     }
 
     renderAdvancedForensics(data, keyEvents) {

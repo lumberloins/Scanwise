@@ -1,58 +1,75 @@
 """
 Keystroke Timing & Jitter Analyzer.
-Analyzes inter-character arrival times from hardware wedge event streams to detect
-scanner burst speed vs manual typing vs Citrix/RDP virtual channel latency drops.
-"""
 
-def analyze_timings(timings):
-    """
-    Analyzes an array of high-resolution timestamp deltas (in milliseconds) between keystrokes.
-    """
+Works on per-character timestamps (key-down times, ms). Distinguishes scanner
+bursts from manual typing and flags mid-scan gaps typical of Citrix/RDP
+virtual channel lag or a scanner inter-character delay setting.
+"""
+import statistics
+
+SCANNER_MAX_AVG_MS = 40.0
+HISTOGRAM_EDGES = [2, 5, 10, 20, 50, 100]
+
+
+def _bucket_label(lo, hi):
+    return f"{lo}-{hi} ms" if hi is not None else f"{lo}+ ms"
+
+
+def analyze_timings(timings, dwells=None):
+    """`timings`: absolute timestamps (ms) for each character, in order."""
     if not timings or len(timings) < 2:
         return {
-            "total_burst_time_ms": 0,
-            "avg_inter_char_ms": 0,
-            "is_scanner_speed": True,
-            "jitter_detected": False,
-            "description": "Insufficient timing data (single key or manual entry)."
+            "total_burst_time_ms": 0, "avg_inter_char_ms": 0, "is_scanner_speed": True,
+            "jitter_detected": False, "deltas": [], "spikes": [], "histogram": [],
+            "description": "Insufficient timing data (single key or no timestamps).",
         }
 
-    # Calculate deltas if absolute timestamps were provided
-    deltas = []
-    for i in range(1, len(timings)):
-        delta = timings[i] - timings[i-1]
-        deltas.append(max(0.0, delta))
+    deltas = [max(0.0, timings[i] - timings[i - 1]) for i in range(1, len(timings))]
+    total = timings[-1] - timings[0]
+    avg = sum(deltas) / len(deltas)
+    median = statistics.median(deltas)
+    ordered = sorted(deltas)
+    p95 = ordered[min(len(ordered) - 1, int(round(0.95 * (len(ordered) - 1))))]
+    is_scanner = median < SCANNER_MAX_AVG_MS
 
-    if not deltas:
-        return {
-            "total_burst_time_ms": 0,
-            "avg_inter_char_ms": 0,
-            "is_scanner_speed": True,
-            "jitter_detected": False,
-            "description": "No timing deltas computed."
-        }
+    # A spike is a gap far above the scan's own rhythm.
+    spike_floor = max(50.0, 5 * median)
+    spikes = [{"after_index": i, "delta_ms": round(d, 3)} for i, d in enumerate(deltas) if d > spike_floor]
+    jitter = is_scanner and bool(spikes) and (max(deltas) > 100.0 or len(spikes) >= 2)
 
-    total_time = sum(deltas)
-    avg_delta = total_time / len(deltas)
+    edges = [0] + HISTOGRAM_EDGES
+    hist = []
+    for k, lo in enumerate(edges):
+        hi = edges[k + 1] if k + 1 < len(edges) else None
+        n = sum(1 for d in deltas if d >= lo and (hi is None or d < hi))
+        hist.append({"label": _bucket_label(lo, hi), "count": n})
 
-    # Scanner signature: average inter-character delay < 30ms
-    is_scanner = avg_delta < 40.0
-
-    # Jitter / Citrix lag detection: high variance or spikes > 80ms mid-scan
-    max_delta = max(deltas)
-    min_delta = min(deltas)
-    jitter_detected = is_scanner and (max_delta > 100.0) and (max_delta / (min_delta + 1.0) > 10.0)
-
-    desc = "Consistent high-speed scanner burst."
     if not is_scanner:
-        desc = "Detected manual typing speed (inter-character delay > 40ms)."
-    elif jitter_detected:
-        desc = "Timing jitter detected! Spikes in inter-character arrival suggest Citrix/RDP virtual desktop latency or dropped characters."
+        desc = f"Manual typing speed (median {median:.1f} ms between keys)."
+    elif jitter:
+        desc = f"Scanner burst with {len(spikes)} mid-scan gap(s) up to {max(deltas):.0f} ms: typical of VDI/RDP lag."
+    else:
+        desc = "Consistent high-speed scanner burst."
 
-    return {
-        "total_burst_time_ms": round(total_time, 2),
-        "avg_inter_char_ms": round(avg_delta, 2),
+    res = {
+        "total_burst_time_ms": round(total, 2),
+        "avg_inter_char_ms": round(avg, 2),
+        "median_inter_char_ms": round(median, 3),
+        "min_inter_char_ms": round(ordered[0], 3),
+        "max_inter_char_ms": round(ordered[-1], 3),
+        "p95_inter_char_ms": round(p95, 3),
+        "stdev_ms": round(statistics.pstdev(deltas), 3),
+        "chars_per_second": round((len(timings) - 1) / (total / 1000.0), 1) if total > 0 else None,
         "is_scanner_speed": is_scanner,
-        "jitter_detected": jitter_detected,
-        "description": desc
+        "jitter_detected": bool(jitter),
+        "spike_threshold_ms": round(spike_floor, 2),
+        "spikes": spikes,
+        "deltas": [round(d, 3) for d in deltas],
+        "histogram": hist,
+        "description": desc,
     }
+    dw = [d for d in (dwells or []) if d is not None]
+    if dw:
+        res["dwell"] = {"min_ms": round(min(dw), 3), "max_ms": round(max(dw), 3),
+                        "median_ms": round(statistics.median(dw), 3)}
+    return res

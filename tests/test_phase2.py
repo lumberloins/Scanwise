@@ -10,7 +10,7 @@ def test_ascii_character_classification():
 
     # Test harmful control (ASCII 0 NUL)
     nul_info = get_char_info(0)
-    assert nul_info["category"] == "harmful_control"
+    assert nul_info["category"] == "control"
     assert nul_info["safe"] is False
 
     # Test printable character

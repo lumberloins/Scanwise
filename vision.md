@@ -92,6 +92,11 @@ To ensure seamless deployment across clinical technician laptops, workstations o
 
 ## 4. Hardware Wedge & Input Capture Subsystem
 
+> **Implementation note (2026-10):** capture now records raw key events (physical `code` + modifiers +
+> timing) and decodes them server-side, so Ctrl-ASCII (`Ctrl+]`), Alt+numpad (`Alt+0029`) and
+> function-key mappings all resolve to the correct byte. An optional native agent reads the OS input
+> layer directly. See `BUILD_PLAN.md` and `docs/ENGINEERING_GUIDE.md`; where 4.2 differs, those win.
+
 ### 4.1 The Web Browser Wedge Challenge
 In hospital environments, handheld scanners operate as **USB HID Keyboards**. When scanning into standard HTML inputs:
 - Browsers frequently strip, suppress, or misinterpret non-printable ASCII control characters (such as ASCII 29 `<GS>` / Group Separator, which represents FNC1 in GS1 barcodes).

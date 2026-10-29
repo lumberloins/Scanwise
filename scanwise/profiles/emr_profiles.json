@@ -25,6 +25,7 @@
     "name": "Generic GS1 / Pass-Through (Diagnostic)",
     "expected_prefix": "",
     "expected_suffix": "",
-    "description": "Unrestricted diagnostic mode for raw wedge capture without profile enforcement."
+    "description": "Unrestricted diagnostic mode for raw wedge capture without profile enforcement.",
+    "pass_through": true
   }
 }

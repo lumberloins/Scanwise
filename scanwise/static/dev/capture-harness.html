@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ScanWise capture harness</title>
+<link rel="stylesheet" href="/static/css/main.css">
+<link rel="stylesheet" href="/static/css/scan.css">
+</head>
+<body style="padding: 2rem">
+<h1>Capture harness (dev)</h1>
+<p class="instruction-text">Minimal page for the e2e test and for debugging capture without the full UI.</p>
+<div id="stream" class="stream"></div>
+<pre id="out" style="margin-top:1rem; font-size: 0.8rem; white-space: pre-wrap"></pre>
+<script type="module">
+import { KeyCapture } from '/static/js/core/capture.js';
+import { analyze } from '/static/js/core/api.js';
+import { streamView, clear, unitsToVisualText } from '/static/js/core/render.js';
+
+window.__scans = [];
+const cap = new KeyCapture({
+    gapMs: 120,
+    onScan: async ({ events, meta }) => {
+        const res = await analyze(events, { client: meta });
+        window.__scans.push(res);
+        clear(document.getElementById('stream'), streamView(res.units));
+        document.getElementById('out').textContent = unitsToVisualText(res.units);
+    },
+});
+cap.arm();
+window.__ready = true;
+</script>
+</body>
+</html>

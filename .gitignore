@@ -48,3 +48,7 @@ Thumbs.db
 # Environment & Logs
 .env
 *.log
+
+# Runtime / build output
+scanwise.pid
+agent/dist/

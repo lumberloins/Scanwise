@@ -1,0 +1,112 @@
+/* Engineering Mode */
+
+body.eng .app-main { max-width: 1400px; }
+.eng-layout { display: flex; flex-direction: column; gap: 1rem; }
+.label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 0.2rem; }
+.small { font-size: 0.8rem; }
+.mono { font-family: var(--font-mono); }
+.num { font-family: var(--font-mono); text-align: right; font-variant-numeric: tabular-nums; }
+.ok-text { color: #34d399; }
+.warn-text { color: #fbbf24; }
+.err-text { color: #f87171; }
+.num-input { width: 5rem; background: var(--bg-card); color: var(--text-main); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.4rem 0.5rem; }
+
+.card-head { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+.card-head h2 { margin: 0; }
+.card-tools { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; }
+.file-btn { display: inline-flex; align-items: center; }
+
+.eng-status { display: flex; gap: 2.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.dot { display: inline-block; width: 0.6rem; height: 0.6rem; border-radius: 50%; margin-right: 0.3rem; }
+.dot-live { background: var(--color-success); box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25); }
+.dot-off { background: var(--text-muted); }
+.dot-warn { background: var(--color-warning); }
+
+.live-keys {
+    font-family: var(--font-mono); font-size: 0.75rem; background: #090d16; border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm); padding: 0.5rem; min-height: 2.6rem; max-height: 7rem; overflow-y: auto;
+    display: flex; flex-wrap: wrap; gap: 0.25rem; align-content: flex-start;
+}
+.live-chip { background: var(--bg-card); padding: 0.05rem 0.35rem; border-radius: 3px; }
+.live-chip.with-mods { background: rgba(168, 85, 247, 0.25); color: #e9d5ff; }
+
+.summary { display: flex; flex-direction: column; gap: 0.75rem; }
+.summary-verdict { padding: 0.6rem 0.9rem; border-radius: var(--radius-sm); border-left: 5px solid var(--border-color); }
+.summary-verdict.verdict-success { border-left-color: var(--color-success); background: rgba(16, 185, 129, 0.08); }
+.summary-verdict.verdict-warning { border-left-color: var(--color-warning); background: rgba(245, 158, 11, 0.08); }
+.summary-verdict.verdict-error { border-left-color: var(--color-error); background: rgba(239, 68, 68, 0.08); }
+.stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr)); gap: 0.75rem 1.25rem; }
+.stat .value { font-weight: 600; font-size: 0.95rem; }
+
+.eng-tabs { display: flex; gap: 0.25rem; border-bottom: 1px solid var(--border-color); margin-bottom: 1rem; flex-wrap: wrap; }
+.eng-tab { background: none; border: none; color: var(--text-muted); padding: 0.6rem 0.9rem; font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent; font-size: 0.875rem; }
+.eng-tab:hover { color: var(--text-main); }
+.eng-tab.active { color: var(--text-main); border-bottom-color: var(--color-primary); }
+.eng-tab .count { background: var(--bg-card); border-radius: 999px; padding: 0 0.45rem; font-size: 0.7rem; margin-left: 0.2rem; }
+.eng-pane { display: none; }
+.eng-pane.active { display: block; }
+.pane-h { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin: 1.2rem 0 0.5rem; }
+.pane-h:first-child { margin-top: 0; }
+
+.table-wrap { overflow: auto; max-height: 32rem; border: 1px solid var(--border-color); border-radius: var(--radius-sm); }
+.eng-table { border-collapse: collapse; width: 100%; font-size: 0.8rem; }
+.eng-table th { position: sticky; top: 0; background: var(--bg-card); text-align: left; padding: 0.4rem 0.5rem; font-weight: 600; white-space: nowrap; z-index: 1; }
+.eng-table td { padding: 0.3rem 0.5rem; border-top: 1px solid rgba(71, 85, 105, 0.45); white-space: nowrap; }
+.eng-table tbody tr { cursor: pointer; }
+.eng-table tbody tr:hover td { background: rgba(255, 255, 255, 0.03); }
+.eng-table tr.selected td { background: rgba(59, 130, 246, 0.18); }
+.eng-table tr.sev-row-bad td:first-child { box-shadow: inset 3px 0 0 var(--color-error); }
+.eng-table tr.sev-row-warn td:first-child { box-shadow: inset 3px 0 0 var(--color-warning); }
+.eng-table tr.ev-up td { color: var(--text-muted); }
+.eng-table tr.current td { background: rgba(59, 130, 246, 0.1); }
+.eng-table .trunc { max-width: 28rem; overflow: hidden; text-overflow: ellipsis; }
+.row-actions { display: flex; gap: 0.25rem; }
+
+.flag { display: inline-block; font-size: 0.68rem; font-weight: 700; padding: 0 0.35rem; border-radius: 3px; margin-right: 0.2rem; text-transform: uppercase; letter-spacing: 0.03em; }
+.flag-err { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+.flag-warn { background: rgba(245, 158, 11, 0.2); color: #fcd34d; }
+.flag-info { background: rgba(148, 163, 184, 0.18); color: #cbd5e1; }
+
+.kv-table { border-collapse: collapse; font-size: 0.85rem; }
+.kv-table th { text-align: left; color: var(--text-muted); font-weight: 500; padding: 0.3rem 1.2rem 0.3rem 0; vertical-align: top; white-space: nowrap; }
+.kv-table td { padding: 0.3rem 0; }
+.two-col { display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; }
+@media (max-width: 800px) { .two-col { grid-template-columns: 1fr; } }
+
+/* Timing chart */
+.chart-wrap { overflow-x: auto; }
+.timing-chart { width: 100%; min-width: 600px; height: auto; display: block; }
+.timing-chart .grid { stroke: rgba(148, 163, 184, 0.15); stroke-width: 1; }
+.timing-chart .baseline { stroke: rgba(148, 163, 184, 0.5); stroke-width: 1; }
+.timing-chart .axis-label { fill: var(--text-muted); font-size: 11px; font-family: var(--font-sans); }
+.timing-chart .bar { fill: #60a5fa; }
+.timing-chart .bar.spike { fill: #f59e0b; }
+.timing-chart .bar.selected { fill: #f8fafc; outline: none; }
+.timing-chart .threshold { stroke: #f59e0b; stroke-width: 1.5; stroke-dasharray: 5 4; }
+.timing-chart .hit { fill: transparent; cursor: pointer; }
+.timing-chart .hit.selected { outline: none; fill: rgba(255, 255, 255, 0.05); }
+.timing-chart .bar-label { fill: var(--text-muted); font-size: 10px; font-family: var(--font-mono); }
+.timing-chart .hit:hover { fill: rgba(255, 255, 255, 0.04); }
+.chart-tooltip {
+    position: fixed; z-index: 50; pointer-events: none; background: #0b1220; border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm); padding: 0.5rem 0.65rem; font-size: 0.8rem; box-shadow: var(--shadow-md); max-width: 20rem;
+}
+.chart-tooltip .tip-title { font-weight: 700; margin-bottom: 0.2rem; }
+
+.finding { border-left: 4px solid var(--border-color); padding: 0.5rem 0.9rem; margin-bottom: 0.75rem; background: rgba(255, 255, 255, 0.02); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+.finding-error { border-left-color: var(--color-error); }
+.finding-warning { border-left-color: var(--color-warning); }
+.finding-info { border-left-color: #64748b; }
+.finding p { margin: 0.3rem 0; font-size: 0.875rem; }
+.evidence { font-size: 0.72rem; background: #090d16; padding: 0.4rem; border-radius: 4px; overflow-x: auto; max-height: 10rem; }
+
+.compare-pick { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin-bottom: 0.5rem; }
+.diff-stream { font-family: var(--font-mono); font-size: 1rem; line-height: 2.1; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.6rem 0.9rem; word-break: break-all; margin: 0.5rem 0 1rem; }
+.diff-del { background: rgba(239, 68, 68, 0.25); text-decoration: line-through; text-decoration-color: #f87171; }
+.diff-add { background: rgba(16, 185, 129, 0.25); text-decoration: underline; text-decoration-color: #34d399; }
+.compare-table .diff-row td { color: #fbbf24; }
+.compare-table td { padding-right: 2rem; }
+.source-controls { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+.url-input { width: 13rem; background: var(--bg-card); color: var(--text-main); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.45rem 0.6rem; font-family: var(--font-mono); font-size: 0.8rem; }
+.agent-msg { flex-basis: 100%; font-size: 0.8rem; }
+.eng-status > div:first-child { flex: 1 1 28rem; }
