@@ -74,10 +74,10 @@ def test_function_keys_are_tokens_not_bytes():
 
 def test_full_mixed_scan():
     # Epic-style framing with GS1 DataMatrix, AIM ID, GS separator, FF and CR+LF.
-    s = KeySeq().type("/DATA/]d20100301234567896").type("10LOT1").ctrl("BracketRight") \
+    s = KeySeq().type("\\]d20100301234567896").type("10LOT1").ctrl("BracketRight") \
         .type("21SER").ctrl("KeyL").enter().ctrl("KeyJ")
     res = decode_events(s.events)
-    assert res["text"] == "/DATA/]d20100301234567896" "10LOT1\x1d21SER\x0c\r\n"
+    assert res["text"] == "\\]d20100301234567896" "10LOT1\x1d21SER\x0c\r\n"
     assert visualize(res["text"]).endswith("<GS>21SER<FF><CR><LF>")
 
 

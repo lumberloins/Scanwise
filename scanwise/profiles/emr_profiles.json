@@ -2,9 +2,10 @@
   "epic_emr": {
     "id": "epic_emr",
     "name": "Epic EMR (Hyperspace / Rover)",
-    "expected_prefix": "/DATA/",
-    "expected_suffix": "\r",
-    "description": "Standard Epic clinical workstation wedge configuration requiring /DATA/ wrapping and Carriage Return."
+    "expected_prefix": "\\",
+    "expected_suffix": "\\",
+    "description": "Epic workstation wedge configuration: the barcode is wrapped in backslashes (\\data\\). An Enter, Line feed or Tab after the closing backslash is optional, depending on the workflow; the AIM ID may come before or after the opening backslash.",
+    "optional_terminators": "\r\n\t"
   },
   "cerner_millennium": {
     "id": "cerner_millennium",

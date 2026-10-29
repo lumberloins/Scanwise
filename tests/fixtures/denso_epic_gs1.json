@@ -1,0 +1,1157 @@
+{
+"note": "Real DENSO scan, Epic enterprise configuration (\\data\\ wrapping, no terminator). GS1 sample label, no PHI.",
+"events": [
+{
+"t": 14429,
+"type": "down",
+"code": "Backslash",
+"key": "\\",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 220,
+"src": "browser"
+},
+{
+"t": 14434,
+"type": "up",
+"code": "Backslash",
+"key": "\\",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 220,
+"src": "browser"
+},
+{
+"t": 14441,
+"type": "down",
+"code": "Digit0",
+"key": "0",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 48,
+"src": "browser"
+},
+{
+"t": 14445,
+"type": "up",
+"code": "Digit0",
+"key": "0",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 48,
+"src": "browser"
+},
+{
+"t": 14453,
+"type": "down",
+"code": "Digit1",
+"key": "1",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 49,
+"src": "browser"
+},
+{
+"t": 14457,
+"type": "up",
+"code": "Digit1",
+"key": "1",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 49,
+"src": "browser"
+},
+{
+"t": 14465,
+"type": "down",
+"code": "Digit0",
+"key": "0",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 48,
+"src": "browser"
+},
+{
+"t": 14469,
+"type": "up",
+"code": "Digit0",
+"key": "0",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 48,
+"src": "browser"
+},
+{
+"t": 14477,
+"type": "down",
+"code": "Digit9",
+"key": "9",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 57,
+"src": "browser"
+},
+{
+"t": 14481,
+"type": "up",
+"code": "Digit9",
+"key": "9",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 57,
+"src": "browser"
+},
+{
+"t": 14489,
+"type": "down",
+"code": "Digit5",
+"key": "5",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 53,
+"src": "browser"
+},
+{
+"t": 14493,
+"type": "up",
+"code": "Digit5",
+"key": "5",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 53,
+"src": "browser"
+},
+{
+"t": 14501,
+"type": "down",
+"code": "Digit0",
+"key": "0",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 48,
+"src": "browser"
+},
+{
+"t": 14506,
+"type": "up",
+"code": "Digit0",
+"key": "0",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 48,
+"src": "browser"
+},
+{
+"t": 14513,
+"type": "down",
+"code": "Digit1",
+"key": "1",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 49,
+"src": "browser"
+},
+{
+"t": 14517,
+"type": "up",
+"code": "Digit1",
+"key": "1",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 49,
+"src": "browser"
+},
+{
+"t": 14525,
+"type": "down",
+"code": "Digit1",
+"key": "1",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 49,
+"src": "browser"
+},
+{
+"t": 14528,
+"type": "up",
+"code": "Digit1",
+"key": "1",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 49,
+"src": "browser"
+},
+{
+"t": 14537,
+"type": "down",
+"code": "Digit0",
+"key": "0",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 48,
+"src": "browser"
+},
+{
+"t": 14541,
+"type": "up",
+"code": "Digit0",
+"key": "0",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 48,
+"src": "browser"
+},
+{
+"t": 14549,
+"type": "down",
+"code": "Digit1",
+"key": "1",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 49,
+"src": "browser"
+},
+{
+"t": 14553,
+"type": "up",
+"code": "Digit1",
+"key": "1",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 49,
+"src": "browser"
+},
+{
+"t": 14561,
+"type": "down",
+"code": "Digit5",
+"key": "5",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 53,
+"src": "browser"
+},
+{
+"t": 14565,
+"type": "up",
+"code": "Digit5",
+"key": "5",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 53,
+"src": "browser"
+},
+{
+"t": 14574,
+"type": "down",
+"code": "Digit3",
+"key": "3",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 51,
+"src": "browser"
+},
+{
+"t": 14577,
+"type": "up",
+"code": "Digit3",
+"key": "3",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 51,
+"src": "browser"
+},
+{
+"t": 14585,
+"type": "down",
+"code": "Digit0",
+"key": "0",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 48,
+"src": "browser"
+},
+{
+"t": 14590,
+"type": "up",
+"code": "Digit0",
+"key": "0",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 48,
+"src": "browser"
+},
+{
+"t": 14597,
+"type": "down",
+"code": "Digit0",
+"key": "0",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 48,
+"src": "browser"
+},
+{
+"t": 14601,
+"type": "up",
+"code": "Digit0",
+"key": "0",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 48,
+"src": "browser"
+},
+{
+"t": 14609,
+"type": "down",
+"code": "Digit0",
+"key": "0",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 48,
+"src": "browser"
+},
+{
+"t": 14613,
+"type": "up",
+"code": "Digit0",
+"key": "0",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 48,
+"src": "browser"
+},
+{
+"t": 14621,
+"type": "down",
+"code": "Digit3",
+"key": "3",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 51,
+"src": "browser"
+},
+{
+"t": 14625,
+"type": "up",
+"code": "Digit3",
+"key": "3",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 51,
+"src": "browser"
+},
+{
+"t": 14633,
+"type": "down",
+"code": "Digit1",
+"key": "1",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 49,
+"src": "browser"
+},
+{
+"t": 14637,
+"type": "up",
+"code": "Digit1",
+"key": "1",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 49,
+"src": "browser"
+},
+{
+"t": 14645,
+"type": "down",
+"code": "Digit7",
+"key": "7",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 55,
+"src": "browser"
+},
+{
+"t": 14649,
+"type": "up",
+"code": "Digit7",
+"key": "7",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 55,
+"src": "browser"
+},
+{
+"t": 14658,
+"type": "down",
+"code": "Digit1",
+"key": "1",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 49,
+"src": "browser"
+},
+{
+"t": 14661,
+"type": "up",
+"code": "Digit1",
+"key": "1",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 49,
+"src": "browser"
+},
+{
+"t": 14669,
+"type": "down",
+"code": "Digit5",
+"key": "5",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 53,
+"src": "browser"
+},
+{
+"t": 14673,
+"type": "up",
+"code": "Digit5",
+"key": "5",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 53,
+"src": "browser"
+},
+{
+"t": 14681,
+"type": "down",
+"code": "Digit0",
+"key": "0",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 48,
+"src": "browser"
+},
+{
+"t": 14685,
+"type": "up",
+"code": "Digit0",
+"key": "0",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 48,
+"src": "browser"
+},
+{
+"t": 14693,
+"type": "down",
+"code": "Digit1",
+"key": "1",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 49,
+"src": "browser"
+},
+{
+"t": 14697,
+"type": "up",
+"code": "Digit1",
+"key": "1",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 49,
+"src": "browser"
+},
+{
+"t": 14705,
+"type": "down",
+"code": "Digit1",
+"key": "1",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 49,
+"src": "browser"
+},
+{
+"t": 14709,
+"type": "up",
+"code": "Digit1",
+"key": "1",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 49,
+"src": "browser"
+},
+{
+"t": 14717,
+"type": "down",
+"code": "Digit9",
+"key": "9",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 57,
+"src": "browser"
+},
+{
+"t": 14721,
+"type": "up",
+"code": "Digit9",
+"key": "9",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 57,
+"src": "browser"
+},
+{
+"t": 14729,
+"type": "down",
+"code": "Digit1",
+"key": "1",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 49,
+"src": "browser"
+},
+{
+"t": 14733,
+"type": "up",
+"code": "Digit1",
+"key": "1",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 49,
+"src": "browser"
+},
+{
+"t": 14741,
+"type": "down",
+"code": "Digit0",
+"key": "0",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 48,
+"src": "browser"
+},
+{
+"t": 14745,
+"type": "up",
+"code": "Digit0",
+"key": "0",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 48,
+"src": "browser"
+},
+{
+"t": 14753,
+"type": "down",
+"code": "ShiftLeft",
+"key": "Shift",
+"mods": {
+"ctrl": false,
+"shift": true,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 1,
+"keyCode": 16,
+"src": "browser"
+},
+{
+"t": 14758,
+"type": "down",
+"code": "KeyA",
+"key": "A",
+"mods": {
+"ctrl": false,
+"shift": true,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 65,
+"src": "browser"
+},
+{
+"t": 14761,
+"type": "up",
+"code": "KeyA",
+"key": "A",
+"mods": {
+"ctrl": false,
+"shift": true,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 65,
+"src": "browser"
+},
+{
+"t": 14765,
+"type": "up",
+"code": "ShiftLeft",
+"key": "CapsLock",
+"mods": {
+"ctrl": false,
+"shift": true,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 16,
+"src": "browser"
+},
+{
+"t": 14774,
+"type": "down",
+"code": "ShiftLeft",
+"key": "Shift",
+"mods": {
+"ctrl": false,
+"shift": true,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 1,
+"keyCode": 16,
+"src": "browser"
+},
+{
+"t": 14777,
+"type": "down",
+"code": "KeyB",
+"key": "B",
+"mods": {
+"ctrl": false,
+"shift": true,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 66,
+"src": "browser"
+},
+{
+"t": 14782,
+"type": "up",
+"code": "KeyB",
+"key": "B",
+"mods": {
+"ctrl": false,
+"shift": true,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 66,
+"src": "browser"
+},
+{
+"t": 14785,
+"type": "up",
+"code": "ShiftLeft",
+"key": "CapsLock",
+"mods": {
+"ctrl": false,
+"shift": true,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 16,
+"src": "browser"
+},
+{
+"t": 14793,
+"type": "down",
+"code": "Minus",
+"key": "-",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 173,
+"src": "browser"
+},
+{
+"t": 14797,
+"type": "up",
+"code": "Minus",
+"key": "-",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 173,
+"src": "browser"
+},
+{
+"t": 14805,
+"type": "down",
+"code": "Digit1",
+"key": "1",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 49,
+"src": "browser"
+},
+{
+"t": 14809,
+"type": "up",
+"code": "Digit1",
+"key": "1",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 49,
+"src": "browser"
+},
+{
+"t": 14817,
+"type": "down",
+"code": "Digit2",
+"key": "2",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 50,
+"src": "browser"
+},
+{
+"t": 14821,
+"type": "up",
+"code": "Digit2",
+"key": "2",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 50,
+"src": "browser"
+},
+{
+"t": 14829,
+"type": "down",
+"code": "Digit3",
+"key": "3",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 51,
+"src": "browser"
+},
+{
+"t": 14833,
+"type": "up",
+"code": "Digit3",
+"key": "3",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 51,
+"src": "browser"
+},
+{
+"t": 14841,
+"type": "down",
+"code": "Backslash",
+"key": "\\",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 220,
+"src": "browser"
+},
+{
+"t": 14845,
+"type": "up",
+"code": "Backslash",
+"key": "\\",
+"mods": {
+"ctrl": false,
+"shift": false,
+"alt": false,
+"meta": false
+},
+"repeat": false,
+"location": 0,
+"keyCode": 220,
+"src": "browser"
+}
+]
+}

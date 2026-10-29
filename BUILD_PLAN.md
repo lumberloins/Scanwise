@@ -326,8 +326,9 @@ This document.
 
 1. **Windows agent runtime test** on real hardware (`-list`, live scan, Both mode).
 2. **Linux live evdev test** with a real scanner (`input` group), including `-grab`.
-3. **Confirm EMR profile values** (`emr_profiles.json`): `/DATA/` + CR for Epic, `~` + CR for Cerner are
-   taken from `vision.md`, not verified against site programming sheets.
+3. **Confirm EMR profile values** (`emr_profiles.json`): Epic is confirmed from a real DENSO scan
+   (2026-10-29): data wrapped in backslashes `\<data>\`, optional CR/LF/Tab after. `~` + CR for Cerner
+   and CR for Meditech are still from `vision.md`, not verified against site programming sheets.
 4. **Scanner keyboard-country:** the decoder assumes US. Non-US scanner settings show as layout mismatches;
    add per-country tables if the fleet uses them.
 5. **Cross-host agent access:** if the UI is served from a server (not localhost), verify Chromium's
@@ -406,4 +407,30 @@ This document.
   pagehide. Diagnostic tools carry PHI warnings. The server never wrote scans to disk; the agent logs
   no key data. **pytest 82, e2e 30 passed** (new `tests/test_redact.py`; e2e: storage audit, legacy
   purge, export defaults).
+- **Phase 16** (2026-10-29, "GS1 not recognized with Epic configuration; it's the \data\ prefix; Epic
+  doesn't require CR/LF or Tab"). Cause: the Epic profile expected `/DATA/` + CR (from `vision.md`), and
+  prefixes matched only exactly. So `\data\` stayed in the payload, GS1 detection saw `\data\0100…`, and
+  scans without a suffix failed Epic and raised `no_suffix`. The Epic profile is now `\data\`,
+  `prefix_case_insensitive`, `accepted_suffixes` none/CR/CR+LF/Tab. `no_suffix` is raised only when the
+  expected or matched profile needs a suffix (`framing.suffix_required`). An unknown visible prefix
+  directly before a registered AIM ID is split off as `prefix_unrecognized`. Tech Mode shows "Nothing
+  (not needed for this setup)" for the suffix. **pytest 87** (new Epic GS1 tests: no suffix, any case,
+  every accepted suffix, no AIM, unknown prefix).
+- **Phase 17** (2026-10-29, "still 'framing doesn't match' when \data\ is present and correct; a CR/LF/Tab
+  suffix is fine for some Epic workflows, but techs should see it"). Two causes reproduced. (1) Scanners
+  that send the AIM ID ahead of the custom prefix (`]d2\data\…`): the prefix was only looked for at the
+  start, giving "Missing prefix". `detect_framing` now recognises AIM-then-prefix (`framing.aim_at`) and
+  `region_of` labels both parts correctly. (2) Only none/CR/CR+LF/Tab were accepted, so LF alone or Tab+CR
+  failed. The Epic profile now uses `accepted_suffix_chars` "\r\n\t" (none or any mix). For a matched
+  profile with a prefix, "Set up for" now names the suffix ("…, CR (Enter) after each scan" / "…, no
+  suffix"). **pytest 90, e2e 31 passed.** Not yet confirmed against the user's actual scan (no export).
+- **Phase 18** (2026-10-29). The user's full-data export settled it: the enterprise Epic configuration
+  sends `\01095011015300031715011910AB-123\`, with the data **wrapped** in backslashes and no
+  terminator. "\data\" in Epic terms means \ + data + \, not literal text. Phases 16 and 17 had modelled
+  a literal `\data\` prefix, so the real scans still failed ("Missing prefix", no GS1, "No suffix").
+  The Epic profile is now prefix `\`, suffix `\`, `optional_terminators` "\r\n\t" (replacing
+  `accepted_suffix_chars`). `detect_framing` splits off a profile's visible closing text only when that
+  profile's opening prefix was found. "Set up for" spells out the wrapping and the terminator. A missing
+  terminator is an info finding unless the selected or matched profile needs one. The real scan is a
+  fixture (`tests/fixtures/denso_epic_gs1.json`). **pytest 108, e2e 31 passed.**
 

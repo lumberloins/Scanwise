@@ -1,6 +1,6 @@
 {
   "valid_epic_gs1_medication": {
-    "raw_input": "/DATA/]d201003012345678961725123110BATCH999\u001d21SER12345\r",
+    "raw_input": "\\]d201003012345678961725123110BATCH999\u001d21SER12345\\\r",
     "profile_id": "epic_emr",
     "expected_category": "PASS"
   },
@@ -10,7 +10,7 @@
     "expected_category": "SCANNER_CONFIG_FAULT"
   },
   "harmful_control_char_fault": {
-    "raw_input": "/DATA/]C0PATIENT123\u0000\r",
+    "raw_input": "\\]C0PATIENT123\u0000\\\r",
     "profile_id": "epic_emr",
     "expected_category": "SCANNER_CONFIG_FAULT"
   }

@@ -127,6 +127,25 @@ ScanWise locally (`http://localhost:5000`).
 are **site configuration**: confirm them against your EMR team's scanner programming sheets and edit as
 needed. A profile with `"pass_through": true` accepts any framing and is excluded from auto-detection.
 
+| Key | Meaning |
+|---|---|
+| `expected_prefix` | Text the EMR expects before the data |
+| `prefix_case_insensitive` | Match the prefix in any letter case |
+| `expected_suffix` | Preferred suffix (`""` = none) |
+| `accepted_suffixes` | Every suffix the EMR accepts; include `""` if none is required (then a missing suffix is not a fault) |
+| `optional_terminators` | `expected_suffix` may be followed by any mix of these characters, or none |
+
+**Epic** (confirmed by the team from a real DENSO scan): the barcode is wrapped in backslashes,
+`\<data>\` (written `\data\` in Epic's documentation). So prefix `\`, suffix `\`, and then optionally
+any mix of CR, LF and Tab, depending on the workflow. None of those terminators is a fault, and Tech Mode
+says which one is sent: "Epic EMR (Hyperspace / Rover): "\" before the data, "\" after it, no Enter or
+Tab" or "..., then CR (Enter)". The AIM ID may come before or after the opening `\`. The closing `\` is
+only removed when the opening one was found, so other data that ends in `\` is left alone. The captured
+scan is kept as a regression test (`tests/fixtures/denso_epic_gs1.json`).
+
+If the scanner sends a prefix no profile knows, but a valid AIM ID (e.g. `]d2`) follows it, the leading
+text is still treated as a prefix (`prefix_unrecognized: true`) and the barcode is parsed normally.
+
 ## 6. Tests
 
 ```bash

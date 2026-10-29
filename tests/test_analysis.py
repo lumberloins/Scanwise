@@ -23,13 +23,14 @@ def scan(seq, profile_id=None, **kw):
 
 
 def epic_gs1():
-    return KeySeq().type("/DATA/]d2010030123456789610LOT1").ctrl("BracketRight").type("21SER9").enter()
+    # Epic wraps the barcode in backslashes: \<data>\ (here with an optional CR after).
+    return KeySeq().type("\\]d2010030123456789610LOT1").ctrl("BracketRight").type("21SER9\\").enter()
 
 
 def test_epic_scan_auto_detects_profile_and_passes():
     res = scan(epic_gs1())
-    assert res["config"]["prefix"]["words"] == '"/DATA/"'
-    assert res["config"]["suffix"]["words"] == "CR (Enter)"
+    assert res["config"]["prefix"]["words"] == '"\\"'
+    assert res["config"]["suffix"]["words"] == '"\\" + CR (Enter)'
     assert "epic_emr" in res["config"]["matched_profiles"]
     assert res["config"]["aim"]["enabled"] is True
     assert res["config"]["gs1_separators"]["status"] == "present"
@@ -41,7 +42,7 @@ def test_units_carry_region_and_badges():
     res = scan(epic_gs1())
     chars = [u for u in res["units"] if u["kind"] == "char"]
     assert chars[0]["region"] == "prefix"
-    assert chars[6]["region"] == "aim"
+    assert chars[1]["region"] == "aim"
     gs = [u for u in chars if u["abbr"] == "GS"][0]
     assert gs["region"] == "data" and gs["via"] == "ctrl" and gs["hex"] == "1D"
     assert chars[-1]["abbr"] == "CR" and chars[-1]["region"] == "suffix"
@@ -58,12 +59,98 @@ def test_suffix_words(build, words):
     assert res["config"]["suffix"]["words"] == words
 
 
-def test_tab_suffix_fails_epic_but_detects_ok():
+def test_wrong_prefix_fails_epic():
     res = scan(KeySeq().type("/DATA/MRN42").tab(), profile_id="epic_emr")
     assert res["framing"]["profile_matched"] is False
     assert res["verdict"]["category"] == "SCANNER_CONFIG_FAULT"
     epic = [p for p in res["config"]["profile_checks"] if p["id"] == "epic_emr"][0]
-    assert "Suffix is Tab" in epic["reasons"][0]
+    assert "prefix" in epic["reasons"][0].lower()
+
+
+GS1_BODY = ("0100301234567896", "10LOT1", "21SER9")
+TERMINATORS = {None: lambda s: s, "cr": lambda s: s.enter(), "tab": lambda s: s.tab(),
+               "crlf": lambda s: s.enter().ctrl("KeyJ"), "lf": lambda s: s.ctrl("KeyJ"),
+               "tab+cr": lambda s: s.tab().enter()}
+
+
+def epic_scan(aim="]d2", terminator=None, aim_first=False):
+    """Epic framing: \\ + data + \\, optionally followed by CR/LF/Tab."""
+    lead = (aim + "\\") if aim_first else ("\\" + aim)
+    s = KeySeq().type(lead + GS1_BODY[0] + GS1_BODY[1]).ctrl("BracketRight").type(GS1_BODY[2] + "\\")
+    return TERMINATORS[terminator](s)
+
+
+def test_real_denso_epic_scan_is_gs1_and_passes():
+    # Captured from the team's DENSO with the enterprise Epic configuration.
+    fx = json.load(open(os.path.join(os.path.dirname(__file__), "fixtures", "denso_epic_gs1.json")))
+    for profile in ("auto", "epic_emr"):
+        res = analyze(key_events=fx["events"], profiles=PROFILES, profile_id=profile)
+        assert res["text"] == "\\01095011015300031715011910AB-123\\"
+        assert res["verdict"]["category"] == "PASS", res["findings"]
+        assert res["gs1_detection"]["is_gs1"]
+        assert [(e["ai"], e["value"]) for e in res["gs1_data"]["elements"]] == [
+            ("01", "09501101530003"), ("17", "150119"), ("10", "AB-123")]
+        assert res["config"]["configured_for"] == \
+            'Epic EMR (Hyperspace / Rover): "\\" before the data, "\\" after it, no Enter or Tab'
+        assert not any(f["severity"] in ("warning", "error") for f in res["findings"])
+
+
+@pytest.mark.parametrize("terminator", list(TERMINATORS))
+@pytest.mark.parametrize("aim,aim_first", [("]d2", False), ("]d2", True), ("", False)])
+def test_epic_wrapping_with_any_optional_terminator(terminator, aim, aim_first):
+    for profile in ("auto", "epic_emr"):
+        res = scan(epic_scan(aim=aim, terminator=terminator, aim_first=aim_first), profile_id=profile)
+        assert res["framing"]["profile_matched"] in (True, None), res["framing"]["profile_reasons"]
+        assert "epic_emr" in res["framing"]["matched_profiles"], res["config"]["profile_checks"]
+        assert res["gs1_detection"]["is_gs1"]
+        assert [e["ai"] for e in res["gs1_data"]["elements"]] == ["01", "10", "21"]
+        assert res["gs1_data"]["elements"][-1]["value"] == "SER9"      # closing \\ is not part of the serial
+        assert res["verdict"]["category"] == "PASS", res["findings"]
+        cf = res["config"]["configured_for"]
+        assert ("no Enter or Tab" in cf) if terminator is None else ("then " in cf), cf
+
+
+def test_epic_regions_with_aim_first():
+    res = scan(epic_scan(aim_first=True, terminator="cr"), profile_id="epic_emr")
+    regions = "".join(u["region"][0] for u in res["units"] if u["kind"] == "char")
+    assert regions.startswith("aaap" + "d")
+    assert regions.endswith("dss")
+
+
+def test_epic_missing_closing_backslash_fails():
+    s = KeySeq().type("\\" + GS1_BODY[0])
+    res = scan(s, profile_id="epic_emr")
+    assert res["framing"]["profile_matched"] is False
+
+
+def test_epic_rejects_a_non_terminator_after_the_wrapping():
+    res = scan(epic_scan().ctrl("KeyL"), profile_id="epic_emr")
+    assert res["framing"]["profile_matched"] is False
+
+
+def test_unknown_text_prefix_before_aim_does_not_hide_gs1():
+    s = KeySeq().type("HOSP1]d2" + GS1_BODY[0] + GS1_BODY[1]).ctrl("BracketRight").type(GS1_BODY[2]).enter()
+    res = scan(s)
+    assert res["framing"]["prefix_detected"] == "HOSP1"
+    assert res["framing"]["prefix_unrecognized"] is True
+    assert res["gs1_detection"]["is_gs1"]
+
+
+def test_trailing_backslash_without_epic_prefix_stays_data():
+    res = scan(KeySeq().type("MRN42\\").enter())
+    assert res["framing"]["suffix_detected"] == "\r"
+
+
+def test_no_suffix_is_only_info_when_nothing_requires_one():
+    res = scan(KeySeq().type("MRN42"))
+    f = [f for f in res["findings"] if f["id"] == "no_suffix"]
+    assert f and f[0]["severity"] == "info"
+    assert res["verdict"]["category"] == "PASS"
+
+
+def test_no_suffix_still_warns_when_profile_needs_one():
+    res = scan(KeySeq().type("MRN42"), profile_id="meditech_expanse")
+    assert any(f["id"] == "no_suffix" for f in res["findings"])
 
 
 def test_form_feed_suffix_is_flagged():
@@ -122,7 +209,7 @@ def test_api_accepts_key_events(client):
     assert r.status_code == 200
     data = r.get_json()
     assert data["input_mode"] == "key_events"
-    assert data["text"].endswith("\x1d21SER9\r")
+    assert data["text"].endswith("\x1d21SER9\\\r")
     assert "<" not in json.dumps(data["units"])  # no HTML in structured units
 
 

@@ -53,7 +53,7 @@ export const suites = {
         await waitFor(() => cdp.eval('window.__ready === true'), { what: 'tech ready' });
 
         await test('Epic GS1 scan: configured for Epic, PASS, CR suffix badge', async () => {
-            const r = await scanAndWait(cdp, s => s.type('/DATA/]d2010030123456789610LOT1').ctrl('BracketRight').type('21SER9').enter());
+            const r = await scanAndWait(cdp, s => s.type('\\]d2010030123456789610LOT1').ctrl('BracketRight').type('21SER9\\').enter());
             eq(r.verdict.category, 'PASS', 'verdict');
             assert((await text(cdp, '#cfg-configured-for')).includes('Epic'), 'configured for Epic');
             eq(await badges(cdp, '#cfg-suffix'), 'CR', 'suffix badges');
@@ -61,6 +61,16 @@ export const suites = {
             eq(await cdp.eval("document.getElementById('verdict-banner').className.includes('verdict-success')"), true, 'green banner');
             eq(await cdp.eval("document.querySelector('details.details').open"), false, 'details collapsed (no hex by default)');
             await screenshot(cdp, 'tech-epic-pass');
+        });
+
+        await test('Epic \\data\\ wrapping, GS1, no Enter/Tab (real DENSO format): GS1 recognised, PASS', async () => {
+            const r = await scanAndWait(cdp, s => s.type('\\0100301234567896' + '17271231' + '10LOT1').ctrl('BracketRight').type('21SER9\\'));
+            eq(r.gs1_detection.is_gs1, true, 'GS1 detected');
+            eq(r.verdict.category, 'PASS', 'verdict');
+            assert((await text(cdp, '#cfg-configured-for')).includes('Epic'), 'configured for Epic');
+            assert((await text(cdp, '#cfg-configured-for')).includes('no Enter or Tab'), 'tells the tech there is no Enter/Tab');
+            eq(await text(cdp, '#status-scanner .status-word'), 'Working', 'scanner pill is not "Needs setup"');
+            assert((await text(cdp, '#contents')).includes('LOT1'), 'lot shown in contents');
         });
 
         await test('Scanner stalls mid-barcode: still one scan, full data shown', async () => {
@@ -90,7 +100,7 @@ export const suites = {
             eq(await text(cdp, '#scan-stream'), 'IS2216121CR', 'stream');
         });
 
-        await test('Tab suffix: shown as TAB badge, Epic check fails', async () => {
+        await test('Tab suffix: shown as TAB badge; Epic check fails (not wrapped in \\ \\)', async () => {
             await scanAndWait(cdp, s => s.type('MRN0042').tab());
             eq(await badges(cdp, '#cfg-suffix'), 'TAB', 'suffix badges');
             const epic = await cdp.eval("[...document.querySelectorAll('#cfg-profiles li')].find(li => li.textContent.includes('Epic')).className");
@@ -103,7 +113,7 @@ export const suites = {
             assert((await text(cdp, '#cfg-suffix')).includes('Enter + Line feed'), 'suffix words');
         });
 
-        await test('Expected Epic + Tab suffix -> fault banner with programming hint', async () => {
+        await test('Expected Epic, scan not wrapped in \\ \\ -> fault banner with programming hint', async () => {
             await cdp.eval("(() => { const s = document.getElementById('profile-select'); s.value = 'epic_emr'; s.dispatchEvent(new Event('change')); })()");
             const r = await scanAndWait(cdp, s => s.type('MRN0042').tab());
             eq(r.verdict.category, 'SCANNER_CONFIG_FAULT', 'verdict');

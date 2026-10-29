@@ -5,6 +5,8 @@ Answers the onsite tech's question: "how is this scanner configured?", in
 plain words: prefix, suffix, AIM IDs, GS1 separators, which profiles match.
 """
 
+from scanwise.diagnostics.framing import describe_framing_part, split_suffix
+
 CONTROL_MODE_WORDS = {
     "ctrl_ascii": "Ctrl+key combinations (Ctrl-ASCII mode)",
     "alt_numpad": "Alt+numpad codes (keypad emulation)",
@@ -40,7 +42,14 @@ def build_config_summary(framing, symbology, gs1, anomalies, decode=None):
         # Profiles without a prefix match any generic scanner with that suffix: say what it does.
         configured_for = f"No prefix, {suffix_words} after each scan (matches {' / '.join(r['name'] for r in matched)})"
     elif matched:
-        configured_for = " / ".join(r["name"] for r in matched)
+        # Spell out the framing, including whether an Enter/Tab follows: where it is optional (Epic) the tech
+        # still needs to know which one this scanner sends.
+        text, terms = split_suffix(framing.get("suffix_detected", ""))
+        parts = [f"{prefix_words} before the data"]
+        if text:
+            parts.append(f"{describe_framing_part(text)} after it")
+        parts.append(f"then {describe_framing_part(terms)}" if terms else "no Enter or Tab")
+        configured_for = f"{' / '.join(r['name'] for r in matched)}: {', '.join(parts)}"
     elif not framing.get("prefix_detected") and not framing.get("suffix_detected"):
         configured_for = "No prefix or suffix (raw data only)"
     else:

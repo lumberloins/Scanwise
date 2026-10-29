@@ -21,7 +21,7 @@ def test_api_profiles(client):
 
 def test_api_analyze(client):
     payload = {
-        "raw_input": "/DATA/]d201003012345678961725123110BATCH999\u001d21SER12345\r",
+        "raw_input": "\\]d201003012345678961725123110BATCH999\u001d21SER12345\\\r",
         "profile_id": "epic_emr",
         "keystroke_timings": [0, 5, 10, 15, 20]
     }

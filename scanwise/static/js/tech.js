@@ -45,9 +45,12 @@ function judge(res) {
     };
 }
 
-function framingCell(units, region) {
+function framingCell(units, region, framing = {}) {
     const parts = units.filter(u => u.region === region);
-    if (!parts.length) return [el('span', { class: 'muted', text: 'Nothing' })];
+    if (!parts.length) {
+        const fine = region === 'suffix' && framing.suffix_required === false;
+        return [el('span', { class: 'muted', text: fine ? 'Nothing (not needed for this setup)' : 'Nothing' })];
+    }
     const words = parts.map(u => u.visible ? u.char : ({ CR: 'Enter', TAB: 'Tab', LF: 'Line feed', GS: 'GS' }[u.abbr] || u.abbr));
     return [el('span', { class: 'framing-badges' }, parts.map(u => unitNode(u))),
         parts.some(u => !u.visible) ? el('span', { class: 'muted', text: `  = ${words.join(' + ')}` }) : null];
@@ -95,7 +98,7 @@ function render(res) {
     $('config-card').hidden = false;
     clear($('cfg-configured-for'), el('strong', { text: cfg.configured_for }));
     clear($('cfg-prefix'), framingCell(res.units, 'prefix'));
-    clear($('cfg-suffix'), framingCell(res.units, 'suffix'));
+    clear($('cfg-suffix'), framingCell(res.units, 'suffix', res.framing));
     clear($('cfg-aim'), cfg.aim.enabled ? `On: ${cfg.aim.id} (${cfg.aim.symbology})` : 'Off');
     clear($('cfg-gs1'), cfg.gs1_separators.words);
 

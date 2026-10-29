@@ -209,9 +209,15 @@ def build_findings(framing, anomalies, gs1, timing, decode=None, client=None, gs
 
     suffix = framing.get("suffix_detected", "")
     if framing and not suffix and framing.get("clean_payload"):
-        out.append(_f("no_suffix", "warning", "SCANNER_CONFIG_FAULT", "No suffix (no Enter or Tab after the data)",
-                      "The scan ends without a terminator, so EMR fields won't submit or advance automatically.",
-                      "The scanner doesn't press Enter or Tab after the barcode. Most EMRs need one."))
+        if framing.get("suffix_required"):
+            out.append(_f("no_suffix", "warning", "SCANNER_CONFIG_FAULT",
+                          f"No suffix, but {framing.get('profile_name') or 'this setup'} needs one",
+                          "The scan ends without a terminator, so fields won't submit or advance automatically.",
+                          f"The scanner doesn't press Enter or Tab after the barcode; {framing.get('profile_name') or 'this setup'} expects one."))
+        else:
+            out.append(_f("no_suffix", "info", "INFO", "No suffix sent (no Enter or Tab after the data)",
+                          "The scan ends without a terminator. That is fine where the application doesn't need one.",
+                          "The scanner sends nothing after the barcode (no Enter or Tab). This is normal for setups that don't need it."))
     elif suffix and len(suffix) >= 2 and len(set(suffix)) == 1:
         out.append(_f("double_suffix", "warning", "SCANNER_CONFIG_FAULT", "Repeated suffix character",
                       f"Suffix is {framing.get('suffix_words')}; repeated terminators can submit forms twice.",

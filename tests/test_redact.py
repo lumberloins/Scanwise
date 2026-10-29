@@ -20,9 +20,9 @@ def test_wristband_mrn_and_name_are_replaced_controls_kept():
 
 
 def test_gs1_ais_separators_aim_and_profile_prefix_survive():
-    s = KeySeq().type("/DATA/]d2" "0100301234567896" "10LOT9").ctrl("BracketRight").type("21Ab7").enter()
+    s = KeySeq().type("\\]d2" "0100301234567896" "10LOT9").ctrl("BracketRight").type("21Ab7\\").enter()
     text, _ = redacted_text(s)
-    assert text == "/DATA/]d2" "0100000000000000" "10XXX0\x1d" "21Xx0\r"
+    assert text == "\\]d2" "0100000000000000" "10XXX0\x1d" "21Xx0\\\r"
 
 
 def test_unconfirmed_prefix_is_redacted():

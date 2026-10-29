@@ -93,7 +93,7 @@ def analyze(key_events=None, raw_input=None, profiles=None, profile_id=None, key
             u.update({"abbr": info["abbr"], "name": info["name"], "category": info["category"],
                       "severity": info["severity"], "hex": info["hex"], "visible": info["visible"],
                       "description": info["desc"], "char_index": char_pos,
-                      "region": region_of(char_pos, framing["prefix_length"], aim_len, body_len)})
+                      "region": region_of(char_pos, framing["prefix_length"], aim_len, body_len, framing.get("aim_at"))})
             char_pos += 1
         else:
             u.update({"abbr": u["token"], "name": f"Key: {u['token']}", "category": "token",

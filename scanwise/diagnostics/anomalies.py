@@ -11,7 +11,13 @@ LITERAL_FNC1_AIS = ("10", "11", "13", "15", "17", "21", "30", "240")
 ISO15434_HEADER = "[)>\x1e"
 
 
-def region_of(index, prefix_len, aim_len, body_len):
+def region_of(index, prefix_len, aim_len, body_len, aim_at=None):
+    """aim_at: position of an AIM ID sent ahead of the custom prefix (AIM, prefix, data)."""
+    if aim_at is not None and aim_len:
+        if aim_at <= index < aim_at + aim_len:
+            return "aim"
+        if index < prefix_len + aim_len:
+            return "prefix"
     if index < prefix_len:
         return "prefix"
     if index < prefix_len + aim_len:
@@ -51,7 +57,7 @@ def detect_anomalies(text, framing=None, aim_len=0):
     for c in inspection["characters"]:
         if c["category"] in ("printable", "extended"):
             continue
-        c = dict(c, region=region_of(c["index"], prefix_len, aim_len, body_len))
+        c = dict(c, region=region_of(c["index"], prefix_len, aim_len, body_len, framing.get("aim_at") if framing else None))
         controls.append(c)
         if c["region"] == "data" and c["category"] not in ("gs1_delimiter",):
             if iso and c["category"] == "separator":
