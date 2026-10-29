@@ -7,7 +7,7 @@
 import { KeyCapture, enableKeyboardLock, disableKeyboardLock } from './core/capture.js';
 import { analyze } from './core/api.js';
 import { AgentClient } from './agent-client.js';
-import { el, clear, streamView, unitNode, hexDump, copyButton, unitsToVisualText, unitsToHex, fmtMs } from './core/render.js';
+import { el, clear, streamView, unitNode, hexDump, copyButton, unitsToVisualText, unitsToHex, fmtMs, segmentedView, gs1OrderLine } from './core/render.js';
 
 const $ = id => document.getElementById(id);
 const HISTORY_KEY = 'scanwise.engineering.history.v1';
@@ -165,6 +165,12 @@ function renderSummary() {
 function renderStream() {
     const { res } = state.current;
     clear($('stream-box'), streamView(res.units, { onSelect: select }));
+    const g = res.gs1_data;
+    $('eng-gs1-box').hidden = !(g && g.elements.length);
+    if (g && g.elements.length) {
+        clear($('eng-gs1-segments'), segmentedView(res, { onSelect: select }));
+        clear($('eng-gs1-order'), gs1OrderLine(res));
+    }
     const json = JSON.stringify(res.text);
     clear($('stream-tools'),
         copyButton('Copy visual', () => unitsToVisualText(res.units)),
@@ -351,8 +357,8 @@ function renderParsed(res) {
     const sections = [
         el('h3', { class: 'pane-h', text: 'Framing' }),
         kv([
-            ['Prefix', [framingBadges(res, 'prefix'), `  ${f.prefix_words} · hex ${f.raw_prefix_hex || '–'}`]],
-            ['Suffix', [framingBadges(res, 'suffix'), `  ${f.suffix_words} · hex ${f.raw_suffix_hex || '–'}`]],
+            ['Prefix', f.prefix_detected ? [framingBadges(res, 'prefix'), `  ${f.prefix_words} · hex ${f.raw_prefix_hex}`] : 'None'],
+            ['Suffix', f.suffix_detected ? [framingBadges(res, 'suffix'), `  ${f.suffix_words} · hex ${f.raw_suffix_hex}`] : 'None'],
             ['Expected profile', f.profile_name ? `${f.profile_name}: ${f.profile_matched ? 'match' : 'MISMATCH. ' + f.profile_reasons.join(' ')}` : 'none (auto-detect)'],
             ['Profiles matched', res.config.matched_profiles.join(', ') || 'none'],
         ]),
@@ -376,17 +382,32 @@ function renderParsed(res) {
         ]),
     ];
     if (res.gs1_data) {
-        const rows = res.gs1_data.elements.map(e => el('tr', null,
-            el('td', { class: 'mono', text: `(${e.ai})` }), el('td', { text: e.name }), el('td', { class: 'mono', text: e.raw_value }),
-            el('td', { text: e.formatted_value }),
+        const g = res.gs1_data, det = res.gs1_detection || {};
+        const TERM = { predefined: 'predefined length', gs: 'GS', end: 'end of data', missing_gs: 'GS MISSING', hri: 'bracket', url: 'URL' };
+        const rows = g.elements.map(e => el('tr', { onclick: () => { const u = res.units.find(x => x.gs1_element === e.index); if (u) select(u.index); } },
+            el('td', { class: 'num', text: e.index + 1 }),
+            el('td', { class: 'mono', text: `(${e.ai})` }), el('td', { text: e.title }), el('td', { class: 'mono', text: e.spec }),
+            el('td', { class: 'mono', text: e.value }), el('td', { text: e.formatted_value !== e.value ? e.formatted_value : '' }),
+            el('td', { class: 'num', text: e.start ?? '–' }),
+            el('td', null, flag(e.boundary_guessed ? 'GS missing (guessed)' : TERM[e.terminator] || e.terminator,
+                e.boundary_guessed || e.terminator === 'missing_gs' ? 'err' : 'info'),
+                e.gs_unnecessary ? flag('extra GS', 'info') : null),
             el('td', null, [
+                e.unknown ? flag('unknown AI', 'err') : null,
                 'check_digit_valid' in e ? flag(e.check_digit_valid ? 'check ok' : 'BAD check digit', e.check_digit_valid ? 'info' : 'err') : null,
                 e.date_info ? flag(e.date_info.valid ? (e.date_info.expired ? 'expired' : e.date_info.rule) : 'invalid date', e.date_info.valid ? 'info' : 'err') : null,
-                e.too_long ? flag('too long: GS missing?', 'err') : null, e.truncated ? flag('truncated', 'err') : null])));
+                ...(e.issues || []).filter(i => !/check digit|date|Invalid month/i.test(i)).map(i => flag(i, 'err'))])));
         sections.push(el('h3', { class: 'pane-h', text: 'GS1 element string' }),
-            tableWrap(['AI', 'Name', 'Raw', 'Formatted', 'Checks'], rows),
-            res.gs1_data.error ? el('p', { class: 'warn-text', text: res.gs1_data.error }) : null,
-            res.gs1_data.heuristic_applied ? el('p', { class: 'warn-text', text: 'A field boundary was guessed (missing GS).' }) : null);
+            kv([
+                ['Detected as GS1', `${det.is_gs1 ? 'yes' : 'no'} (${det.confidence}): ${det.reason || ''}`],
+                ['Input form', { raw: 'raw element string', hri: 'bracketed human-readable', digital_link: 'GS1 Digital Link URI' }[g.form] || g.form],
+                ['Leading FNC1', g.leading_fnc1 ? 'yes' : 'no'],
+                ['Separators (GS) at', g.separators.length ? g.separators.join(', ') : 'none'],
+                ['Order', `${g.order.map(a => `(${a})`).join(' → ')}${g.typical_order ? '' : '  (primary key not first, still valid GS1)'}`],
+                ['Missing separators', g.missing_separators.length ? g.missing_separators.map(m => `${m.definite ? 'DEFINITE' : 'possible'}: after (${m.after_ai}) ${JSON.stringify(m.value)} → (${m.next_ai})`).join('; ') : 'none'],
+            ]),
+            tableWrap(['#', 'AI', 'Field', 'Format', 'Value', 'Means', 'Pos', 'Ended by', 'Checks'], rows),
+            el('p', { class: 'muted small', text: 'GS1 allows fields in any order. Fields whose AI starts with 00-04, 11-20, 31-36 or 41 have predefined lengths and never need a GS; every other field must be followed by GS unless it is last.' }));
     }
     clear($('pane-parsed'), sections);
 }

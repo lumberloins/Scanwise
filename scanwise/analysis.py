@@ -13,7 +13,7 @@ from scanwise.diagnostics.timing import analyze_timings
 from scanwise.diagnostics.verdict import build_findings, generate_verdict
 from scanwise.parsers.aim_codes import parse_aim_identifier
 from scanwise.parsers.ascii_chars import describe_char, visualize
-from scanwise.parsers.gs1_parser import looks_like_gs1, parse_gs1_barcode
+from scanwise.parsers.gs1_parser import detect_gs1
 
 
 def _units_from_text(text, timings):
@@ -25,6 +25,30 @@ def _units_from_text(text, timings):
                       "dwell_ms": None, "repeat": False, "host_key": None,
                       "layout_mismatch": False, "caps_lock_suspected": False})
     return units
+
+
+def _tag_gs1(units, gs1, offset):
+    """Mark each character with the GS1 field it belongs to (raw and bracketed forms)."""
+    if not gs1 or gs1.get("form") not in ("raw", "hri"):
+        return
+    spans = [(e["start"], e["value_start"], e["end"], e["index"]) for e in gs1["elements"] if e.get("start") is not None]
+    seps = set(gs1.get("separators") or [])
+    for u in units:
+        if u["kind"] != "char" or u.get("region") != "data":
+            continue
+        p = u["char_index"] - offset
+        if p == 0 and gs1.get("leading_fnc1"):
+            u["gs1_part"] = "fnc1"
+            continue
+        if p in seps:
+            u["gs1_part"] = "separator"
+            u["gs1_after"] = max((i for (st, vs, en, i) in spans if en <= p), default=None)
+            continue
+        for st, vs, en, i in spans:
+            if st <= p < en:
+                u["gs1_element"] = i
+                u["gs1_part"] = "ai" if p < vs else "value"
+                break
 
 
 def analyze(key_events=None, raw_input=None, profiles=None, profile_id=None, keystroke_timings=None, client=None):
@@ -44,9 +68,8 @@ def analyze(key_events=None, raw_input=None, profiles=None, profile_id=None, key
     aim_len = 3 if symbology["has_aim_id"] else 0
     payload = symbology["clean_payload"]
 
-    gs1 = None
-    if symbology["is_gs1"] or looks_like_gs1(payload):
-        gs1 = parse_gs1_barcode(payload)
+    gs1, gs1_detection = detect_gs1(payload, symbology)
+    gs1_detection["symbology_mismatch"] = bool(gs1 and symbology["has_aim_id"] and not symbology["is_gs1"])
 
     anomalies = detect_anomalies(text, framing, aim_len)
 
@@ -56,7 +79,7 @@ def analyze(key_events=None, raw_input=None, profiles=None, profile_id=None, key
         times = list(keystroke_timings or [])
     timing = analyze_timings(times, [u["dwell_ms"] for u in char_units])
 
-    findings = build_findings(framing, anomalies, gs1, timing, decode, client)
+    findings = build_findings(framing, anomalies, gs1, timing, decode, client, gs1_detection, symbology)
     verdict = generate_verdict(framing, anomalies, gs1, timing, findings=findings)
     config = build_config_summary(framing, symbology, gs1, anomalies, decode)
 
@@ -80,6 +103,8 @@ def analyze(key_events=None, raw_input=None, profiles=None, profile_id=None, key
         if u["t"] is not None:
             prev_t = u["t"]
 
+    _tag_gs1(units, gs1, framing["prefix_length"] + aim_len)
+
     utf8 = text.encode("utf-8")
     return {
         "status": "success",
@@ -95,6 +120,7 @@ def analyze(key_events=None, raw_input=None, profiles=None, profile_id=None, key
         "framing": framing,
         "symbology": symbology,
         "gs1_data": gs1,
+        "gs1_detection": gs1_detection,
         "anomalies": anomalies,
         "timing": timing,
         "client": client or {},

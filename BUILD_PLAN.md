@@ -211,6 +211,7 @@ This document.
 | 7 Agent Windows + builds | ✅ Complete (runtime untested on Windows) |
 | 8 Agent integration | ✅ Complete |
 | 9 Docs/cleanup | ✅ Complete |
+| 10 GS1 detection + data display | ✅ Complete |
 
 ## 7. Environment notes
 
@@ -331,3 +332,24 @@ This document.
 5. **Cross-host agent access:** if the UI is served from a server (not localhost), verify Chromium's
    local-network-access behaviour on your managed browsers; HTTPS for the UI may be required.
 6. Consider stopping tracking `scanwise.pid` and deleting `static/js/ui.js`.
+- **Phase 10** (2026-10-28, after team feedback "not detecting GS1 correctly; show the data with
+  non-printables in place; GS1 fields can be out of order"). Root causes reproduced first: (1) without an
+  AIM ID, GS1 was only detected when the data started with 00/01/02, so (17)- or (21)-first labels were
+  missed; (2) only 18 AIs were known, so NHRN 710-716, 725x patient AIs, GSRN 8017/8018 and internal 91-99
+  broke the parse; (3) the AIM table was wrong (`]Q1` marked GS1; GS1 QR is `]Q3`; `]d3`-`]d6`, Aztec and
+  DataBar modifiers missing or mislabeled). New `parsers/gs1_ai.py`: full AI table with format specs and
+  the predefined-length rule (prefix-free, asserted at import). New `parsers/gs1_parser.py`: parses in any
+  order; terminator per field (`predefined` / `gs` / `end` / `missing_gs`); definite missing GS (value over
+  max length, re-split at the most plausible boundary; non-predefined AI such as (422) followed directly by
+  data) vs *possible* (a variable field hides a strongly validated AI, e.g. lot + 17 + valid date);
+  unnecessary GS after predefined fields; CSET82 / numeric / check-digit / date (GS1 century rule, DD=00)
+  / date-time validation; implied-decimal measures; bracketed HRI `(01)...` and GS1 Digital Link input.
+  `detect_gs1()` gives confidence + reason; non-GS1 data (MRNs, plain URLs) stays non-GS1, and GS1 data
+  in a non-GS1 symbol (`]C0`) is flagged. Characters are tagged with their GS1 field (`gs1_element`,
+  `gs1_part`). UI: Tech Mode has a **Scanned data** card directly under the result: the stream exactly
+  as received (every hidden char inline), then for GS1 a **field view** (labelled boxes in received
+  order: AIM, each field, each GS separator, suffix; how each field ended; red box + "GS MISSING" when a
+  separator is missing), an order line ("Any order is valid GS1"; warns only when the primary key isn't
+  first, since that's where order-dependent EMR parsers break), and a field table. Engineering Mode has the
+  same field view under the byte stream and a fuller GS1 table (format spec, position, terminator, checks,
+  detection reason). **pytest 70 passed** (new `tests/test_gs1.py`), **e2e 21 passed**.

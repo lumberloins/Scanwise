@@ -3,7 +3,7 @@
  */
 import { KeyCapture } from './core/capture.js';
 import { analyze } from './core/api.js';
-import { el, clear, streamView, unitNode, hexDump } from './core/render.js';
+import { el, clear, streamView, unitNode, hexDump, segmentedView, gs1OrderLine, gs1Table, copyButton, unitsToVisualText } from './core/render.js';
 
 const $ = id => document.getElementById(id);
 window.__scans = [];  // read by the e2e tests
@@ -54,7 +54,16 @@ function render(res) {
         el('strong', { text: p.name }),
         p.match ? ' matches' : el('span', { class: 'muted', text: ` ${p.reasons.join(' ')}` }))));
 
+    $('data-card').hidden = false;
     clear($('scan-stream'), streamView(res.units));
+    clear($('data-tools'), copyButton('Copy with tags', () => unitsToVisualText(res.units)));
+    const g = res.gs1_data;
+    $('gs1-box').hidden = !(g && g.elements.length);
+    if (g && g.elements.length) {
+        clear($('gs1-segments'), segmentedView(res));
+        clear($('gs1-order'), gs1OrderLine(res));
+        clear($('gs1-table'), gs1Table(res));
+    }
 
     // The banner already shows the top finding; list the rest.
     const todos = res.findings.filter(f => f.severity !== 'info' && f.id !== v.finding_id).map(f => f.tech_hint);
@@ -98,6 +107,7 @@ capture.arm();
 $('clear-btn').addEventListener('click', e => {
     e.currentTarget.blur();
     $('verdict-banner').hidden = true;
+    $('data-card').hidden = true;
     $('config-card').hidden = true;
     setZone('waiting', 'Ready: scan a barcode', 'No need to click anything. Just scan.');
 });

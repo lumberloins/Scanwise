@@ -12,9 +12,10 @@ SEVERITY_RANK = {"error": 0, "warning": 1, "info": 2}
 PRIORITY = [
     "scan_interrupted", "timing_jitter", "layout_mismatch", "caps_lock", "rogue_control_in_data",
     "harmful_framing_char", "literal_fnc1", "profile_mismatch", "mangled_data", "invalid_check_digit",
-    "missing_gs1_separator", "gs1_parse_error", "invalid_date", "function_keys", "unknown_keys",
+    "missing_gs1_separator", "gs1_symbology_mismatch", "unknown_gs1_ai", "invalid_gs1_value", "invalid_date",
+    "possible_missing_gs1_separator", "gs1_parse_error", "function_keys", "unknown_keys",
     "no_suffix", "double_suffix", "expired", "manual_typing", "ctrl_mode_shortcuts", "leading_fnc1",
-    "iso15434", "control_char_mode",
+    "iso15434", "gs1_order", "unnecessary_gs", "gs1_detected", "control_char_mode",
 ]
 
 
@@ -23,7 +24,85 @@ def _f(fid, severity, category, title, detail, tech_hint=None, evidence=None):
             "detail": detail, "tech_hint": tech_hint or detail, "evidence": evidence or {}}
 
 
-def build_findings(framing, anomalies, gs1, timing, decode=None, client=None):
+def _gs1_findings(gs1, det, symbology):
+    out = []
+    els = gs1.get("elements", [])
+    label = lambda e: f"({e['ai']}) {e['title']}"  # noqa: E731
+
+    if det.get("symbology_mismatch"):
+        out.append(_f("gs1_symbology_mismatch", "warning", "BARCODE_DATA_FAULT",
+                      f"GS1 data in a non-GS1 symbol ({symbology.get('aim_id')} {symbology.get('symbology_name')})",
+                      "The data is structured as GS1 fields, but the AIM ID says the symbol was not encoded in GS1 mode "
+                      "(no FNC1 in first position). Applications that check the AIM ID will not treat it as GS1.",
+                      "This label carries GS1 data but wasn't printed as a GS1 barcode. Many systems will reject it; "
+                      "the label is the problem, not the scanner."))
+
+    for m in gs1.get("missing_separators", []):
+        e = els[m["element"]] if m["element"] < len(els) else None
+        nxt = f"({m['next_ai']})" if m.get("next_ai") else "the next field"
+        if m["definite"]:
+            out.append(_f("missing_gs1_separator", "warning", "BARCODE_DATA_FAULT",
+                          f"Missing GS separator after {label(e) if e else '(' + m['after_ai'] + ')'}",
+                          f"{m.get('reason', '')}. Without a GS the field boundary is ambiguous; ScanWise split it as "
+                          f"({m['after_ai']}) {m['value']!r} then {nxt}. If every label shows this, the scanner is "
+                          "stripping FNC1; if only this label does, the label is encoded wrong.",
+                          f"A GS1 separator is missing after the {e['title'] if e else 'field'}. If other labels scan fine, "
+                          "this label is bad; if all do this, the scanner is stripping separators.",
+                          {"element": m["element"], "after_ai": m["after_ai"], "next_ai": m.get("next_ai")}))
+        else:
+            out.append(_f("possible_missing_gs1_separator", "warning", "BARCODE_DATA_FAULT",
+                          f"Possible missing GS inside {label(e) if e else '(' + m['after_ai'] + ')'}",
+                          f"{m.get('reason', '')}, a valid {nxt}. If that's a separate field, the GS after "
+                          f"({m['after_ai']}) {m['value']!r} is missing and the expiry/ID will be read as part of the value.",
+                          f"The {e['title'] if e else 'field'} may have swallowed the next field: check the printed label.",
+                          {"element": m["element"], "next_ai": m.get("next_ai"), "next_value": m.get("next_value")}))
+
+    for e in els:
+        if e["unknown"]:
+            out.append(_f("unknown_gs1_ai", "warning", "BARCODE_DATA_FAULT", f"Unknown GS1 AI at position {e['start']}",
+                          f"{e['issues'][0]}. Either an AI ScanWise doesn't know, or earlier data is corrupt.",
+                          "The barcode contains a field this tool doesn't recognise.", {"element": e["index"]}))
+            continue
+        if e.get("check_digit_valid") is False:
+            out.append(_f("invalid_check_digit", "error", "BARCODE_DATA_FAULT", f"Invalid check digit in {label(e)}",
+                          f"{e['value']} fails the GS1 mod-10 check.",
+                          "The barcode label itself is bad (wrong check digit). The scanner is fine.", {"element": e["index"]}))
+        di = e.get("date_info")
+        if di and not di.get("valid"):
+            out.append(_f("invalid_date", "warning", "BARCODE_DATA_FAULT", f"Invalid date in {label(e)}",
+                          di.get("error", ""), "The date encoded in the barcode is invalid.", {"element": e["index"]}))
+        elif di and di.get("expired") and e["ai"] in ("17", "7003"):
+            out.append(_f("expired", "info", "BARCODE_DATA_FAULT", "Product is expired",
+                          f"Expiration {e['formatted_value']} is in the past.", "This product is past its expiration date."))
+        other = [i for i in e["issues"] if "check digit" not in i and not i.startswith("Invalid") and not i.startswith("too long")
+                 and not i.startswith("Date must")]
+        if other and not e.get("boundary_guessed"):
+            out.append(_f("invalid_gs1_value", "warning", "BARCODE_DATA_FAULT", f"Invalid value in {label(e)}",
+                          "; ".join(other), f"The {e['title']} field is not formatted the way GS1 requires.",
+                          {"element": e["index"], "value": e["value"]}))
+
+    if gs1.get("unnecessary_separators"):
+        names = ", ".join(f"({els[i]['ai']})" for i in gs1["unnecessary_separators"])
+        out.append(_f("unnecessary_gs", "info", "INFO", "GS after a predefined-length field",
+                      f"A GS follows {names}. GS1 allows it but doesn't require it; strict parsers accept it."))
+
+    if len(els) > 1:
+        order = " → ".join(f"({e['ai']})" for e in els)
+        if not gs1.get("typical_order", True):
+            out.append(_f("gs1_order", "info", "INFO", f"Primary key is not the first GS1 field ({els[0]['ai']} first)",
+                          f"Received order: {order}. GS1 allows any order; only variable-length fields need a GS after "
+                          "them. If an application rejects this label, its parser is order-dependent: an application "
+                          "issue, not the scanner or the label.",
+                          f"Fields arrived in this order: {order}. That's valid GS1. If the EMR rejects it, the EMR's "
+                          "barcode parsing is order-dependent."))
+    if det.get("confidence") == "structure":
+        out.append(_f("gs1_detected", "info", "INFO", "GS1 data detected without a GS1 AIM ID",
+                      f"Recognised as GS1 because it {det.get('reason')}. Enable AIM ID transmission on the scanner to make "
+                      "this unambiguous for EMRs."))
+    return out
+
+
+def build_findings(framing, anomalies, gs1, timing, decode=None, client=None, gs1_detection=None, symbology=None):
     framing, anomalies, timing = framing or {}, anomalies or {}, timing or {}
     summary = (decode or {}).get("summary", {})
     client = client or {}
@@ -92,30 +171,7 @@ def build_findings(framing, anomalies, gs1, timing, decode=None, client=None):
                       "The stream contains replacement or C1 control characters: data was corrupted before reaching the page."))
 
     if gs1:
-        for el in gs1.get("elements", []):
-            if "check_digit_valid" in el and not el["check_digit_valid"]:
-                out.append(_f("invalid_check_digit", "error", "BARCODE_DATA_FAULT",
-                              f"Invalid check digit in AI ({el['ai']})",
-                              f"{el['name']} {el['raw_value']} fails the mod-10 check.",
-                              "The barcode label itself is bad (wrong check digit). The scanner is fine."))
-            if el.get("date_info") and not el["date_info"].get("valid"):
-                out.append(_f("invalid_date", "warning", "BARCODE_DATA_FAULT", f"Invalid date in AI ({el['ai']})",
-                              el["date_info"].get("error", ""), "The date encoded in the barcode is invalid."))
-            elif el.get("date_info", {}).get("expired") and el["ai"] == "17":
-                out.append(_f("expired", "info", "BARCODE_DATA_FAULT", "Product is expired",
-                              f"Expiration {el['formatted_value']} is in the past.", "This product is past its expiration date."))
-        too_long = [el for el in gs1.get("elements", []) if el.get("too_long")]
-        if gs1.get("heuristic_applied") or too_long:
-            out.append(_f("missing_gs1_separator", "warning", "BARCODE_DATA_FAULT",
-                          "Missing GS (FNC1) separator after a variable-length field",
-                          "A variable-length AI (lot/serial) is followed by another AI with no GS between them, "
-                          "so its end had to be guessed. Either the label omits FNC1 or the scanner strips it.",
-                          "A GS1 separator is missing. If other labels scan fine, the label is bad; "
-                          "if every label shows this, the scanner is stripping FNC1.",
-                          {"elements": [el["ai"] for el in too_long]}))
-        if gs1.get("error"):
-            out.append(_f("gs1_parse_error", "warning", "BARCODE_DATA_FAULT", "GS1 data could not be fully parsed",
-                          gs1["error"], "The barcode's GS1 data is malformed or uses fields this tool doesn't know."))
+        out.extend(_gs1_findings(gs1, gs1_detection or {}, symbology or {}))
 
     if summary.get("tokens"):
         out.append(_f("function_keys", "warning", "SCANNER_CONFIG_FAULT",

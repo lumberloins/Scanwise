@@ -84,7 +84,12 @@ def test_plain_wristband_with_10_is_not_gs1():
 
 
 def test_missing_gs_separator_detected():
+    # A 12-char lot is legal, but it hides (17) + a valid date: flagged as *possible*.
     res = scan(KeySeq().type("]d2010030123456789610LOT117251231").enter())
+    assert any(f["id"] == "possible_missing_gs1_separator" for f in res["findings"])
+    assert res["config"]["gs1_separators"]["status"] == "possible_missing"
+    # A 25-char "lot" exceeds X..20, so the missing GS is definite and the boundary is re-split.
+    res = scan(KeySeq().type("]d20100301234567896" "10ABCDEFGHIJKLMNO" "17251231" "21XY").enter())
     assert any(f["id"] == "missing_gs1_separator" for f in res["findings"])
     assert res["config"]["gs1_separators"]["status"] == "missing"
 

@@ -26,6 +26,30 @@
         </div>
     </section>
 
+    <section id="data-card" class="card" hidden>
+        <div class="card-head-row">
+            <h2>Scanned data</h2>
+            <div id="data-tools" class="data-tools" data-scan-ignore></div>
+        </div>
+        <h3>Exactly as received</h3>
+        <div id="scan-stream"></div>
+        <div class="legend">
+            <span><span class="char-badge cat-terminator">CR</span> Enter / Tab / Line Feed</span>
+            <span><span class="char-badge cat-gs1_delimiter">GS</span> GS1 separator</span>
+            <span><span class="char-badge cat-framing">STX</span> framing</span>
+            <span><span class="char-badge cat-control">FF</span> problem character</span>
+            <span><span class="char-badge cat-token">[F5]</span> extra key press</span>
+            <span><span class="ch region-prefix">abc</span> prefix / suffix text</span>
+        </div>
+
+        <div id="gs1-box" hidden>
+            <h3>GS1 fields, in the order received</h3>
+            <div id="gs1-segments"></div>
+            <div id="gs1-order"></div>
+            <div id="gs1-table"></div>
+        </div>
+    </section>
+
     <section id="config-card" class="card" hidden>
         <h2>Scanner configuration</h2>
         <table class="config-table">
@@ -40,17 +64,6 @@
 
         <h3>Profile check</h3>
         <ul id="cfg-profiles" class="profile-checks"></ul>
-
-        <h3>What the scanner typed</h3>
-        <div id="scan-stream"></div>
-        <div class="legend">
-            <span><span class="char-badge cat-terminator">CR</span> Enter / Tab / Line Feed</span>
-            <span><span class="char-badge cat-gs1_delimiter">GS</span> GS1 separator</span>
-            <span><span class="char-badge cat-framing">STX</span> framing</span>
-            <span><span class="char-badge cat-control">FF</span> problem character</span>
-            <span><span class="char-badge cat-token">[F5]</span> extra key press</span>
-            <span><span class="ch region-prefix">abc</span> prefix / suffix text</span>
-        </div>
 
         <div id="todo-box" class="todo-box" hidden>
             <h3>Also check</h3>

@@ -86,6 +86,28 @@ export const suites = {
             await cdp.eval("document.getElementById('profile-select').value = 'auto'");
         });
 
+        await test('GS1 out of order, no AIM: detected, data shown inline, fields in received order', async () => {
+            const r = await scanAndWait(cdp, s => s.type('21SER99').ctrl('BracketRight').type('0100301234567896').type('17270630').type('10L1').enter());
+            eq(r.gs1_detection.is_gs1, true, 'detected as GS1');
+            eq(await badges(cdp, '#scan-stream'), 'GS,CR', 'raw stream shows GS and CR in place');
+            eq(await cdp.eval("document.getElementById('gs1-box').hidden"), false, 'GS1 box shown');
+            const labels = await cdp.eval("[...document.querySelectorAll('#gs1-segments .seg-el .seg-label')].map(n => n.textContent.trim())");
+            eq(labels.map(l => l.match(/\((\d+)\)/)[1]).join(','), '21,01,17,10', 'field order');
+            const kinds = await cdp.eval("[...document.querySelectorAll('#gs1-segments .seg')].map(n => n.className.replace('seg seg-', '').split(' ')[0])");
+            eq(kinds.join(','), 'el,sep,el,el,el,suffix', 'segment sequence with separator in place');
+            assert((await text(cdp, '#gs1-order')).includes('(21) → (01) → (17) → (10)'), 'order line');
+            eq(r.verdict.category, 'PASS', 'order alone is not a fault');
+            await screenshot(cdp, 'tech-gs1-order');
+        });
+
+        await test('GS1 missing separator: field flagged in the field view', async () => {
+            const r = await scanAndWait(cdp, s => s.type(']d20100301234567896').type('10ABCDEFGHIJKLMNO17270630').type('21XY').enter());
+            assert(r.findings.some(f => f.id === 'missing_gs1_separator'), 'finding');
+            eq(await cdp.eval("document.querySelectorAll('#gs1-segments .seg-bad').length"), 1, 'one bad field box');
+            assert((await text(cdp, '#gs1-segments')).includes('GS MISSING'), 'marked GS MISSING');
+            await screenshot(cdp, 'tech-gs1-missing');
+        });
+
         await test('Form feed + rogue BEL are flagged as problem characters', async () => {
             const r = await scanAndWait(cdp, s => s.type('AB').ctrl('KeyG').type('C').ctrl('KeyL'));
             assert(r.findings.some(f => f.id === 'rogue_control_in_data'), 'BEL finding');
@@ -111,6 +133,16 @@ export const suites = {
             eq(evRows, r.decode.event_count, 'one row per key event');
             assert(Number(await text(cdp, '#findings-count')) > 0, 'findings counted');
             await screenshot(cdp, 'eng-chars');
+        });
+
+        await test('GS1 field view in engineering stream card', async () => {
+            await scanAndWait(cdp, s => s.type(']d2').type('17270630').type('10LOT1').ctrl('BracketRight').type('0100301234567896').enter());
+            eq(await cdp.eval("document.querySelectorAll('#eng-gs1-segments .seg-el').length"), 3, 'three fields');
+            await cdp.eval("document.querySelector('.eng-tab[data-tab=parsed]').click()");
+            assert((await text(cdp, '#pane-parsed')).includes('(17) → (10) → (01)'), 'order in parsed pane');
+            await screenshot(cdp, 'eng-gs1');
+            await cdp.eval("document.querySelector('.eng-tab[data-tab=chars]').click()");
+            await scanAndWait(cdp, s => s.type('AB').alt('0029').type('CD').ctrl('KeyL').key('F5').enter());
         });
 
         await test('Click a badge selects it in every panel', async () => {

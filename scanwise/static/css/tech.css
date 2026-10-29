@@ -67,3 +67,7 @@ a { color: #60a5fa; }
     .config-table th { width: auto; display: block; padding-bottom: 0; }
     .config-table td { display: block; }
 }
+.card-head-row { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+.card-head-row h2 { margin-bottom: 0; }
+#data-card .stream { font-size: 1.35rem; }
+#data-card h3:first-of-type { margin-top: 0.75rem; }

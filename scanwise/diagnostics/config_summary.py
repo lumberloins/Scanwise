@@ -17,20 +17,19 @@ CONTROL_MODE_WORDS = {
 def build_config_summary(framing, symbology, gs1, anomalies, decode=None):
     summary = (decode or {}).get("summary", {})
     has_aim = bool(symbology.get("has_aim_id"))
-    is_gs1 = bool(symbology.get("is_gs1")) or bool(gs1)
 
-    if not is_gs1:
-        gs1_status = "not_gs1"
-        gs1_words = "Not a GS1 barcode"
-    elif gs1 and (gs1.get("heuristic_applied") or any(e.get("too_long") for e in gs1.get("elements", []))):
-        gs1_status = "missing"
-        gs1_words = "Missing: a GS separator is missing between fields"
-    elif anomalies.get("gs_count"):
-        gs1_status = "present"
-        gs1_words = f"Present ({anomalies['gs_count']} GS separator{'s' if anomalies['gs_count'] != 1 else ''})"
+    if not gs1:
+        gs1_status, gs1_words = "not_gs1", "Not a GS1 barcode"
+    elif gs1.get("heuristic_applied"):
+        gs1_status, gs1_words = "missing", "Missing: a GS separator is missing between fields"
+    elif gs1.get("possible_missing_separator"):
+        gs1_status, gs1_words = "possible_missing", "Check: a field may be missing its GS separator"
+    elif anomalies.get("gs_count") and gs1.get("separators"):
+        n = len(gs1["separators"])
+        gs1_status, gs1_words = "present", f"Present ({n} GS separator{'s' if n != 1 else ''})"
     else:
-        gs1_status = "not_needed"
-        gs1_words = "None needed (no variable-length field before another field)"
+        gs1_status, gs1_words = "not_needed", "None needed (no variable-length field before another field)"
+    is_gs1 = bool(gs1)
 
     matched = [r for r in framing.get("profile_results", []) if r["match"] and not r.get("pass_through")]
     prefix_words = framing.get("prefix_words", "None")
@@ -60,6 +59,12 @@ def build_config_summary(framing, symbology, gs1, anomalies, decode=None):
         "aim": {"enabled": has_aim, "id": symbology.get("aim_id"), "symbology": symbology.get("symbology_name"),
                 "words": aim_words},
         "gs1_separators": {"status": gs1_status, "words": gs1_words},
+        "gs1": {
+            "is_gs1": is_gs1,
+            "form": gs1.get("form") if gs1 else None,
+            "order": gs1.get("order", []) if gs1 else [],
+            "typical_order": gs1.get("typical_order", True) if gs1 else True,
+        },
         "control_chars": {
             "mode": summary.get("control_char_mode", "unknown" if not decode else "none_observed"),
             "words": CONTROL_MODE_WORDS.get(summary.get("control_char_mode"), "unknown (raw text input)"),
