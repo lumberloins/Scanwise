@@ -3,23 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}ScanWise - Medical Barcode & Scanner Diagnostic Tool{% endblock %}</title>
+    <title>{% block title %}ScanWise{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/diagnostics.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/scan.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tech.css') }}">
+    {% block styles %}{% endblock %}
 </head>
-<body>
+<body class="{% block body_class %}{% endblock %}">
     <header class="app-header">
         <div class="header-brand">
             <h1>ScanWise</h1>
-            <span class="badge badge-subtle">Medical Scanner Diagnostics</span>
+            <nav class="mode-nav" data-scan-ignore>
+                <a href="{{ url_for('views.tech') }}" class="{{ 'active' if mode == 'tech' }}">Tech Mode</a>
+                <a href="{{ url_for('views.engineering') }}" class="{{ 'active' if mode == 'engineering' }}">Engineering Mode</a>
+            </nav>
         </div>
-        <div class="header-controls">
-            <label for="profile-select">EMR Profile:</label>
-            <select id="profile-select" class="profile-dropdown">
-                {% for pid, pdata in profiles.items() %}
-                <option value="{{ pid }}">{{ pdata.name }}</option>
-                {% endfor %}
-            </select>
+        <div class="header-controls" data-scan-ignore>
+            {% block header_controls %}{% endblock %}
         </div>
     </header>
 
@@ -28,13 +29,10 @@
     </main>
 
     <footer class="app-footer">
-        <p>ScanWise Diagnostic Tool &bull; Zero-Install Technician Suite</p>
+        <p>ScanWise Medical Scanner Diagnostics</p>
     </footer>
 
     <script src="{{ url_for('static', filename='js/audio.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/wedge.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/ui.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
     {% block scripts %}{% endblock %}
 </body>
 </html>

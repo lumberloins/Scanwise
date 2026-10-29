@@ -24,7 +24,7 @@ def test_anomaly_detection():
     # Clean payload vs harmful control character
     clean = "0100301234567896"
     raw_harmful = "0100301234567896\x00"
-    res = detect_anomalies(clean, raw_harmful)
+    res = detect_anomalies(raw_harmful)
     assert res["has_harmful_controls"] is True
 
 def test_timing_analysis():

@@ -10,7 +10,14 @@ import calendar
 
 # GS1 Application Identifiers definition table
 GS1_AIS = {
+    "00": {"name": "SSCC (Serial Shipping Container Code)", "type": "fixed", "length": 18, "is_date": False},
     "01": {"name": "GTIN (Global Trade Item Number)", "type": "fixed", "length": 14, "is_date": False},
+    "02": {"name": "GTIN of Contained Trade Items", "type": "fixed", "length": 14, "is_date": False},
+    "20": {"name": "Internal Product Variant", "type": "fixed", "length": 2, "is_date": False},
+    "22": {"name": "Consumer Product Variant", "type": "variable", "max_length": 20, "is_date": False},
+    "37": {"name": "Count of Trade Items", "type": "variable", "max_length": 8, "is_date": False},
+    "241": {"name": "Customer Part Number", "type": "variable", "max_length": 30, "is_date": False},
+    "250": {"name": "Secondary Serial Number", "type": "variable", "max_length": 30, "is_date": False},
     "10": {"name": "Batch / Lot Number", "type": "variable", "max_length": 20, "is_date": False},
     "11": {"name": "Production Date", "type": "fixed", "length": 6, "is_date": True},
     "13": {"name": "Packaging Date", "type": "fixed", "length": 6, "is_date": True},
@@ -45,6 +52,27 @@ def validate_gtin_checksum(gtin_str):
 
     calculated_check = (10 - (total % 10)) % 10
     return calculated_check == checksum_digit
+
+def validate_sscc_checksum(sscc):
+    """Mod-10 check for the 18-digit SSCC (same weighting as GTIN)."""
+    if not sscc or len(sscc) != 18 or not sscc.isdigit():
+        return False
+    digits = [int(d) for d in sscc]
+    total = sum(d * (3 if i % 2 == 0 else 1) for i, d in enumerate(reversed(digits[:-1])))
+    return (10 - total % 10) % 10 == digits[-1]
+
+
+def looks_like_gs1(payload):
+    """Strong signal of GS1 element string without an AIM ID: leading FNC1 or a clean parse starting with 00/01/02."""
+    if not payload:
+        return False
+    if payload.startswith("\x1d"):
+        return True
+    if payload[:2] not in ("00", "01", "02"):
+        return False
+    res = parse_gs1_barcode(payload)
+    return res["valid"]
+
 
 def parse_gs1_date(date_str):
     """
@@ -186,8 +214,13 @@ def parse_gs1_barcode(payload):
             "formatted_value": val
         }
 
-        if matched_ai == "01":
-            element_result["check_digit_valid"] = validate_gtin_checksum(val)
+        if ai_meta["type"] == "variable" and len(val) > ai_meta["max_length"]:
+            element_result["too_long"] = True
+        if ai_meta["type"] == "fixed" and len(val) != ai_meta["length"]:
+            element_result["truncated"] = True
+
+        if matched_ai in ("00", "01", "02"):
+            element_result["check_digit_valid"] = validate_gtin_checksum(val) if matched_ai != "00" else validate_sscc_checksum(val)
         elif ai_meta["is_date"]:
             date_res = parse_gs1_date(val)
             element_result["date_info"] = date_res

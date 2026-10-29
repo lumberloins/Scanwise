@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}ScanWise: Engineering Mode{% endblock %}
+{% block body_class %}eng{% endblock %}
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/engineering.css') }}">
+{% endblock %}
+
+{% block header_controls %}
+<label for="profile-select">Expected profile:</label>
+<select id="profile-select" class="profile-dropdown">
+    <option value="auto">Auto-detect</option>
+    {% for pid, pdata in profiles.items() if not pdata.pass_through %}
+    <option value="{{ pid }}">{{ pdata.name }}</option>
+    {% endfor %}
+</select>
+<label for="gap-input">Scan gap</label>
+<input id="gap-input" class="num-input" type="number" min="20" max="2000" step="10" value="150" title="Idle time (ms) that ends a scan">
+<span class="muted">ms</span>
+<button id="lock-btn" class="btn btn-secondary btn-small" type="button" title="Fullscreen + Keyboard Lock: lets the page receive Ctrl+W/T/N (ETB/DC4/SO)">Keyboard lock</button>
+{% endblock %}
+
+{% block content %}
+<div class="eng-layout">
+    <section class="card eng-top">
+        <div class="eng-status">
+            <div>
+                <div class="label">Source</div>
+                <div id="source-panel" data-scan-ignore><strong>Browser capture</strong></div>
+            </div>
+            <div>
+                <div class="label">Capture</div>
+                <div id="capture-state"><span class="dot dot-live"></span> Armed: scan anywhere on this page</div>
+            </div>
+            <div>
+                <div class="label">Keyboard lock</div>
+                <div id="lock-state" class="muted">Off</div>
+            </div>
+        </div>
+        <div class="label">Live key events</div>
+        <div id="live-keys" class="live-keys"><span class="muted">Waiting for key events…</span></div>
+    </section>
+
+    <section id="summary" class="card summary" hidden></section>
+
+    <section id="stream-card" class="card" hidden>
+        <div class="card-head">
+            <h2>Byte stream</h2>
+            <div class="card-tools" id="stream-tools" data-scan-ignore></div>
+        </div>
+        <div id="stream-box"></div>
+        <div class="legend">
+            <span><span class="char-badge cat-terminator">CR</span> terminator</span>
+            <span><span class="char-badge cat-gs1_delimiter">GS</span> GS1 FNC1</span>
+            <span><span class="char-badge cat-separator">RS</span> separator</span>
+            <span><span class="char-badge cat-framing">STX</span> framing</span>
+            <span><span class="char-badge cat-control">FF</span> control</span>
+            <span><span class="char-badge cat-invisible">NBSP</span> invisible</span>
+            <span><span class="char-badge cat-token">[F5]</span> non-character key</span>
+            <span><span class="ch region-prefix">abc</span> prefix/suffix</span>
+            <span><span class="ch region-aim">]d2</span> AIM ID</span>
+            <span class="muted">Click any character to trace it across panels.</span>
+        </div>
+    </section>
+
+    <section id="tabs-card" class="card" hidden>
+        <div class="eng-tabs" role="tablist" data-scan-ignore>
+            <button class="eng-tab active" data-tab="chars">Characters</button>
+            <button class="eng-tab" data-tab="events">Key events</button>
+            <button class="eng-tab" data-tab="hex">Hex dump</button>
+            <button class="eng-tab" data-tab="timing">Timing</button>
+            <button class="eng-tab" data-tab="parsed">Framing &amp; data</button>
+            <button class="eng-tab" data-tab="findings">Findings <span id="findings-count" class="count"></span></button>
+            <button class="eng-tab" data-tab="compare">Compare</button>
+        </div>
+        <div class="eng-pane active" id="pane-chars"></div>
+        <div class="eng-pane" id="pane-events"></div>
+        <div class="eng-pane" id="pane-hex"></div>
+        <div class="eng-pane" id="pane-timing"></div>
+        <div class="eng-pane" id="pane-parsed"></div>
+        <div class="eng-pane" id="pane-findings"></div>
+        <div class="eng-pane" id="pane-compare"></div>
+    </section>
+
+    <section class="card">
+        <div class="card-head">
+            <h2>Session history</h2>
+            <div class="card-tools" data-scan-ignore>
+                <button id="export-all-btn" class="btn btn-secondary btn-small" type="button">Export all</button>
+                <label class="btn btn-secondary btn-small file-btn">Import…<input id="import-input" type="file" accept="application/json,.json" hidden></label>
+                <button id="clear-history-btn" class="btn btn-secondary btn-small" type="button">Clear history</button>
+            </div>
+        </div>
+        <p class="muted small">Stored in this browser only. Exports are replay files: re-analysable here and playable by the native agent (<code>--replay</code>).</p>
+        <div id="history-box"></div>
+    </section>
+</div>
+<div id="tooltip" class="chart-tooltip" hidden></div>
+{% endblock %}
+
+{% block scripts %}
+<script type="module" src="{{ url_for('static', filename='js/engineering.js') }}"></script>
+{% endblock %}
