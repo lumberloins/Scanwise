@@ -215,3 +215,63 @@ export function gs1Table(res, { onSelect } = {}) {
         el('thead', null, el('tr', null, ['#', 'AI', 'Field', 'Value', 'Means', 'Ended by', 'Check'].map(h => el('th', { text: h })))),
         el('tbody', null, rows)));
 }
+
+// ---- Barcode contents (human-readable components) -----------------------------------
+
+const FRIENDLY = {
+    '01': 'Product (GTIN)', '00': 'Shipping container (SSCC)', '02': 'Contained product (GTIN)',
+    '17': 'Expiration date', '7003': 'Expiration date & time', '15': 'Best before', '16': 'Sell by',
+    '11': 'Manufactured', '13': 'Packed', '12': 'Due date', '10': 'Lot / Batch', '21': 'Serial number',
+    '30': 'Quantity', '37': 'Quantity', '8018': 'Patient ID (GSRN)', '8017': 'Caregiver ID (GSRN)',
+    '715': 'NDC (FDA)', '710': 'PZN (Germany)', '714': 'AIM code (Portugal)', '7250': 'Date of birth',
+    '7253': 'Family name', '7254': 'Given name', '7240': 'Protocol ID', '240': 'Additional product ID',
+    '250': 'Secondary serial number', '22': 'Product variant',
+};
+const PRIORITY = ['01', '00', '02', '8018', '8017', '17', '7003', '15', '16', '11', '13', '12', '10', '21', '30', '37', '715', '710', '714'];
+
+function humanDate(iso) {
+    if (!iso) return null;
+    const d = new Date(`${iso}T00:00:00`);
+    return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function componentCard(e) {
+    const problems = [...(e.issues || [])];
+    if (e.boundary_guessed || e.terminator === 'missing_gs') problems.unshift('separator (GS) missing after this field');
+    const di = e.date_info;
+    let main = e.formatted_value ?? e.value;
+    const subs = [];
+    if (di && di.valid) {
+        main = humanDate(di.formatted);
+        subs.push(el('span', { class: 'muted', text: di.formatted + (di.rule && di.rule.startsWith('Last') ? ' (end of month)' : '') }));
+        if (['17', '7003'].includes(e.ai)) subs.push(di.expired ? el('span', { class: 'pill pill-bad', text: 'EXPIRED' }) : el('span', { class: 'pill pill-ok', text: 'Not expired' }));
+    }
+    if ('check_digit_valid' in e) {
+        subs.push(e.check_digit_valid ? el('span', { class: 'pill pill-ok', text: 'Check digit OK' }) : el('span', { class: 'pill pill-bad', text: 'Check digit WRONG' }));
+    }
+    if (e.ai === '01' && /^\d03\d{11}$/.test(e.value)) {
+        subs.push(el('span', { class: 'muted', text: `NDC ${e.value.slice(3, 13)} (10 digits; dash format not encoded)` }));
+    }
+    return el('div', { class: `comp${problems.length || e.unknown ? ' comp-bad' : ''}`, dataset: { ai: e.ai } },
+        el('div', { class: 'comp-label', text: FRIENDLY[e.ai] || e.title }),
+        el('div', { class: 'comp-value', text: main }),
+        subs.length ? el('div', { class: 'comp-subs' }, subs) : null,
+        problems.length ? el('div', { class: 'comp-problem', text: problems.join('; ') }) : null,
+        el('div', { class: 'comp-ai', text: `GS1 AI (${e.ai})` }));
+}
+
+/** Cards for each barcode component, most important first. Non-GS1: the data itself. */
+export function componentsView(res) {
+    const g = res.gs1_data;
+    if (g && g.elements.length) {
+        const rank = e => { const i = PRIORITY.indexOf(e.ai); return i === -1 ? 100 + e.index : i; };
+        const sorted = [...g.elements].sort((a, b) => rank(a) - rank(b));
+        return el('div', { class: 'comps' }, sorted.map(componentCard));
+    }
+    const data = res.units.filter(u => u.region === 'data' || u.region === 'token');
+    return el('div', { class: 'comps' },
+        el('div', { class: 'comp comp-wide' },
+            el('div', { class: 'comp-label', text: 'Barcode data' }),
+            el('div', { class: 'comp-value comp-data' }, data.length ? data.map(u => unitNode(u)) : el('span', { class: 'muted', text: '(empty)' })),
+            res.symbology?.has_aim_id ? el('div', { class: 'comp-ai', text: `${res.symbology.symbology_name} (${res.symbology.aim_id})` }) : null));
+}

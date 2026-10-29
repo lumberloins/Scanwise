@@ -14,7 +14,7 @@
     {% endfor %}
 </select>
 <label for="gap-input">Scan gap</label>
-<input id="gap-input" class="num-input" type="number" min="20" max="2000" step="10" value="150" title="Idle time (ms) that ends a scan">
+<input id="gap-input" class="num-input" type="number" min="20" max="2000" step="10" value="150" title="Idle time (ms) that ends a scan after a suffix key (Enter, Tab, LF). Without a suffix key, a scan ends after 1000 ms (or this value, if larger), so a scanner that stalls mid-barcode is not split.">
 <span class="muted">ms</span>
 <button id="lock-btn" class="btn btn-secondary btn-small" type="button" title="Fullscreen + Keyboard Lock: lets the page receive Ctrl+W/T/N (ETB/DC4/SO)">Keyboard lock</button>
 {% endblock %}
@@ -41,6 +41,11 @@
     </section>
 
     <section id="summary" class="card summary" hidden></section>
+
+    <section id="contents-card" class="card" hidden>
+        <h2 id="contents-title" style="margin-bottom:0.75rem">Barcode contents</h2>
+        <div id="contents"></div>
+    </section>
 
     <section id="stream-card" class="card" hidden>
         <div class="card-head">

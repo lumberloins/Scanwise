@@ -80,3 +80,18 @@
 .ok-text { color: #34d399; }
 .warn-text { color: #fbbf24; }
 .mono { font-family: var(--font-mono); }
+
+/* Barcode components */
+.comps { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 0.75rem; }
+.comp { background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0.8rem 1rem; display: flex; flex-direction: column; gap: 0.3rem; min-width: 0; }
+.comp-wide { grid-column: 1 / -1; }
+.comp-label { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+.comp-value { font-size: 1.45rem; font-weight: 700; font-family: var(--font-mono); word-break: break-all; line-height: 1.25; }
+.comp-data { font-size: 1.3rem; font-weight: 600; }
+.comp-subs { display: flex; flex-wrap: wrap; gap: 0.4rem 0.6rem; align-items: center; font-size: 0.82rem; }
+.comp-problem { color: #f87171; font-size: 0.85rem; font-weight: 600; }
+.comp-ai { font-size: 0.7rem; color: var(--text-muted); margin-top: auto; }
+.comp-bad { border-color: rgba(239, 68, 68, 0.7); background: rgba(239, 68, 68, 0.06); }
+.pill { display: inline-block; font-size: 0.72rem; font-weight: 700; padding: 0.05rem 0.5rem; border-radius: 999px; }
+.pill-ok { background: rgba(16, 185, 129, 0.18); color: #34d399; }
+.pill-bad { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }

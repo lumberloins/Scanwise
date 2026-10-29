@@ -128,8 +128,10 @@ function charToKey(ch) {
 
 /** Builds and plays a keystroke sequence the way a HID scanner types it. */
 export class Scanner {
-    constructor(cdp, { stepMs = 3 } = {}) {
+    /** withText: printable keys also carry text, as real keyboards do (they then type into focused text fields). */
+    constructor(cdp, { stepMs = 3, withText = false } = {}) {
         this.cdp = cdp;
+        this.withText = withText;
         this.stepMs = stepMs;
         this.mods = { alt: false, ctrl: false, meta: false, shift: false };
         this.ops = [];
@@ -138,10 +140,13 @@ export class Scanner {
     _bits() { return Object.entries(this.mods).reduce((b, [k, v]) => b | (v ? MOD_BITS[k] : 0), 0); }
 
     _push(type, code, key, vk) {
-        this.ops.push(() => this.cdp.send('Input.dispatchKeyEvent', {
-            type: type === 'down' ? 'rawKeyDown' : 'keyUp', code, key, modifiers: this._bits(),
-            windowsVirtualKeyCode: vk, nativeVirtualKeyCode: vk,
-        }));
+        this.ops.push(() => {
+            const text = this.withText && type === 'down' && key && key.length === 1 && !this.mods.ctrl && !this.mods.alt && !this.mods.meta ? key : null;
+            return this.cdp.send('Input.dispatchKeyEvent', {
+                type: type === 'down' ? (text ? 'keyDown' : 'rawKeyDown') : 'keyUp', code, key, modifiers: this._bits(),
+                windowsVirtualKeyCode: vk, nativeVirtualKeyCode: vk, ...(text ? { text, unmodifiedText: text } : {}),
+            });
+        });
     }
 
     modDown(code) { const [key, m, vk] = MOD_KEYS[code]; this.ops.push(() => { this.mods[m] = true; }); this._push('down', code, key, vk); return this; }
@@ -160,6 +165,17 @@ export class Scanner {
     }
 
     key(name) { return this.press(name, name, NAMED[name] || 0); }
+
+    /** Characters with no physical key code, like RDP/Citrix/VK_PACKET Unicode injection. */
+    unicode(text) {
+        for (const ch of text) this.press('', ch, 0);
+        return this;
+    }
+    /** Text with no key press at all (IME commit / injection): fires only input events. */
+    insertText(text) { this.ops.push(() => this.cdp.send('Input.insertText', { text })); return this; }
+
+    /** Stall mid-scan, like a Bluetooth buffer flush or a slow keystroke-delay setting. */
+    pause(ms) { this.ops.push(() => sleep(ms)); return this; }
     enter() { return this.key('Enter'); }
     tab() { return this.key('Tab'); }
 

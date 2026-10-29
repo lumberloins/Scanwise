@@ -10,11 +10,11 @@ SEVERITY_RANK = {"error": 0, "warning": 1, "info": 2}
 
 # Headline priority among findings of equal severity (earlier wins).
 PRIORITY = [
-    "scan_interrupted", "timing_jitter", "layout_mismatch", "caps_lock", "rogue_control_in_data",
+    "keys_lost", "scan_interrupted", "timing_jitter", "layout_mismatch", "caps_lock", "rogue_control_in_data",
     "harmful_framing_char", "literal_fnc1", "profile_mismatch", "mangled_data", "invalid_check_digit",
     "missing_gs1_separator", "gs1_symbology_mismatch", "unknown_gs1_ai", "invalid_gs1_value", "invalid_date",
     "possible_missing_gs1_separator", "gs1_parse_error", "function_keys", "unknown_keys",
-    "no_suffix", "double_suffix", "expired", "manual_typing", "ctrl_mode_shortcuts", "leading_fnc1",
+    "no_suffix", "double_suffix", "codeless_keys", "expired", "manual_typing", "ctrl_mode_shortcuts", "leading_fnc1",
     "iso15434", "gs1_order", "unnecessary_gs", "gs1_detected", "control_char_mode",
 ]
 
@@ -179,6 +179,29 @@ def build_findings(framing, anomalies, gs1, timing, decode=None, client=None, gs
                       "These keys carry no character. Usually the scanner's function-key mapping or a prefix/suffix "
                       "programmed as a key (e.g. PageDown) instead of a character.",
                       "The scanner presses extra keys (like F-keys or PageDown) that can trigger EMR shortcuts."))
+
+    if summary.get("lost_key_count"):
+        n = summary["lost_key_count"]
+        out.append(_f("keys_lost", "error", "ENVIRONMENT_FAULT",
+                      f"Key presses were lost before reaching the browser ({n} spot{'s' if n > 1 else ''} marked LOST KEY)",
+                      "The scanner pressed Shift/Ctrl/Alt and released it with no key in between. A scanner only does "
+                      "that to type a character, so that character (and possibly more) was dropped between the scanner "
+                      "and the browser. The data shown is incomplete. Usual causes: an input method (IME) such as "
+                      "fcitx5 or ibus processing keystrokes, a remote-desktop/VDI channel, or a keyboard hook. Confirm "
+                      "with the native agent in Both mode, or increase the scanner's inter-keystroke delay.",
+                      "This computer dropped part of the scan: the data shown is incomplete. The scanner is probably "
+                      "fine. Ask IT to check the computer's keyboard input settings (input method / remote session), "
+                      "or set a small keystroke delay on the scanner.",
+                      evidence={"count": n}))
+
+    if summary.get("codeless_count"):
+        out.append(_f("codeless_keys", "info", "ENVIRONMENT_FAULT",
+                      f"{summary['codeless_count']} keystroke(s) arrived without a physical key code",
+                      "The browser received characters but no key positions: typical of Unicode keystroke injection "
+                      "(RDP/Citrix, Windows VK_PACKET, Bluetooth or virtual keyboards, some scanner 'Unicode' modes), "
+                      "or of an input method (IME) delivering text without key presses. "
+                      "ScanWise used the characters the OS produced, so keyboard-layout checks are not possible for them.",
+                      "Some characters arrived as text instead of key presses (remote session, virtual keyboard or input method); the data was still read correctly."))
 
     if summary.get("unknown_keys"):
         out.append(_f("unknown_keys", "warning", "SCANNER_CONFIG_FAULT", "Unrecognized key codes",

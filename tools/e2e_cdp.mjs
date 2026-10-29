@@ -25,9 +25,9 @@ async function test(name, fn) {
 }
 
 /** Play keystrokes, then wait for the n-th scan result recorded by the page under `window.__scans`. */
-async function scanAndWait(cdp, build) {
+async function scanAndWait(cdp, build, opts = {}) {
     const before = await cdp.eval('window.__scans.length');
-    const s = new Scanner(cdp);
+    const s = new Scanner(cdp, opts);
     build(s);
     await s.play();
     await waitFor(() => cdp.eval(`window.__scans.length > ${before}`), { what: 'scan result' });
@@ -63,6 +63,33 @@ export const suites = {
             await screenshot(cdp, 'tech-epic-pass');
         });
 
+        await test('Scanner stalls mid-barcode: still one scan, full data shown', async () => {
+            const before = await cdp.eval('window.__scans.length');
+            const r = await scanAndWait(cdp, s => s.type('010030123456789610LOT').pause(450).type('1').ctrl('BracketRight').pause(450).type('21SER9').enter());
+            eq(await cdp.eval('window.__scans.length'), before + 1, 'one scan, not split');
+            eq(r.text, '010030123456789610LOT1\x1d21SER9\r', 'full text');
+            eq(await text(cdp, '#scan-stream'), '010030123456789610LOT1GS21SER9CR', 'stream shows everything');
+        });
+
+        await test('Keys are received through the focused hidden text box', async () => {
+            eq(await cdp.eval('document.activeElement && document.activeElement.id'), 'scan-sink', 'sink focused on load');
+            await cdp.eval("document.getElementById('clear-btn').click()");
+            await new Promise(r => setTimeout(r, 50));
+            eq(await cdp.eval('document.activeElement && document.activeElement.id'), 'scan-sink', 'sink refocused after a button click');
+        });
+
+        await test('Real key presses that type text: no duplicates, full data', async () => {
+            const r = await scanAndWait(cdp, s => s.type('IS2216121').ctrl('BracketRight').type('x').enter(), { withText: true });
+            eq(r.text, 'IS2216121\x1dx\r', 'text');
+            eq(await cdp.eval("document.getElementById('scan-sink').value"), '', 'sink emptied after the scan');
+        });
+
+        await test('Characters that arrive only as text (no key press) are still captured', async () => {
+            const r = await scanAndWait(cdp, s => s.type('IS').insertText('2216121').enter());
+            eq(r.text, 'IS2216121\r', 'text');
+            eq(await text(cdp, '#scan-stream'), 'IS2216121CR', 'stream');
+        });
+
         await test('Tab suffix: shown as TAB badge, Epic check fails', async () => {
             await scanAndWait(cdp, s => s.type('MRN0042').tab());
             eq(await badges(cdp, '#cfg-suffix'), 'TAB', 'suffix badges');
@@ -73,7 +100,7 @@ export const suites = {
         await test('CR+LF suffix: CR,LF badges and words', async () => {
             await scanAndWait(cdp, s => s.type('MRN0042').enter().ctrl('KeyJ'));
             eq(await badges(cdp, '#cfg-suffix'), 'CR,LF', 'suffix badges');
-            assert((await text(cdp, '#cfg-suffix')).includes('CR (Enter) + LF'), 'suffix words');
+            assert((await text(cdp, '#cfg-suffix')).includes('Enter + Line feed'), 'suffix words');
         });
 
         await test('Expected Epic + Tab suffix -> fault banner with programming hint', async () => {
@@ -98,6 +125,35 @@ export const suites = {
             assert((await text(cdp, '#gs1-order')).includes('(21) → (01) → (17) → (10)'), 'order line');
             eq(r.verdict.category, 'PASS', 'order alone is not a fault');
             await screenshot(cdp, 'tech-gs1-order');
+        });
+
+        await test('GS1 components shown as plain cards (GTIN, expiry, lot, serial) with PASS pills', async () => {
+            const r = await scanAndWait(cdp, s => s.type(']d2').type('0100301234567896').type('17270630').type('10A1B2').ctrl('BracketRight').type('21XYZ').enter());
+            eq(r.verdict.category, 'PASS', 'verdict');
+            const labels = await cdp.eval("[...document.querySelectorAll('#contents .comp-label')].map(n => n.textContent)");
+            eq(labels.join('|'), 'Product (GTIN)|Expiration date|Lot / Batch|Serial number', 'component order');
+            const values = await cdp.eval("[...document.querySelectorAll('#contents .comp-value')].map(n => n.textContent)");
+            eq(values[0], '00301234567896', 'GTIN'); eq(values[2], 'A1B2', 'lot'); eq(values[3], 'XYZ', 'serial');
+            assert(values[1].includes('2027'), `expiry shown as a date: ${values[1]}`);
+            assert((await text(cdp, '#contents')).includes('NDC 0123456789'), 'NDC derived from 03-prefixed GTIN');
+            eq(await cdp.eval("document.getElementById('status-scanner').className"), 'status status-ok', 'scanner pill');
+            eq(await cdp.eval("document.getElementById('status-barcode').className"), 'status status-ok', 'barcode pill');
+            await screenshot(cdp, 'tech-gs1-components');
+        });
+
+        await test('Keystrokes without key codes (RDP/Citrix/Unicode mode) still decode GS1', async () => {
+            const r = await scanAndWait(cdp, s => s.unicode('0100301234567896' + '10LOT9' + '\x1d' + '21SER').key('Enter'));
+            eq(r.text, '010030123456789610LOT9\x1d21SER\r', 'decoded text');
+            eq(r.gs1_detection.is_gs1, true, 'GS1 detected');
+            eq(await badges(cdp, '#scan-stream'), 'GS,CR', 'stream');
+            const labels = await cdp.eval("[...document.querySelectorAll('#contents .comp-label')].map(n => n.textContent)");
+            eq(labels.join('|'), 'Product (GTIN)|Lot / Batch|Serial number', 'components');
+        });
+
+        await test('Key presses with nothing readable: clear message instead of a blank page', async () => {
+            await scanAndWait(cdp, s => s.key('F5').key('PageDown'));
+            assert((await text(cdp, '#verdict-headline')).includes('no characters could be read'), 'message');
+            eq(await cdp.eval("document.getElementById('contents-card').hidden"), true, 'no empty cards');
         });
 
         await test('GS1 missing separator: field flagged in the field view', async () => {
@@ -274,7 +330,7 @@ export const suites = {
         await test('Tab and FF never move focus or leak; LF via Ctrl+J', async () => {
             const r = await scanAndWait(cdp, s => s.type('X').tab().ctrl('KeyL').enter().ctrl('KeyJ'));
             eq(r.text, 'X\t\x0c\r\n', 'decoded text');
-            eq(await cdp.eval('document.activeElement === document.body'), true, 'focus stayed on body');
+            eq(await cdp.eval("['scan-sink', ''].includes(document.activeElement.id) && !document.activeElement.matches('button, a, select, input')"), true, 'focus did not move to a control');
         });
 
         await test('Shift capitals do not leak modifier names', async () => {

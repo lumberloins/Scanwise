@@ -14,64 +14,71 @@
 
 {% block content %}
 <div class="tech-layout">
+    <div id="load-error" class="load-error" hidden></div>
+
     <section id="scan-zone" class="scan-zone waiting" aria-live="polite">
         <div class="scan-zone-title" id="scan-zone-title">Ready: scan a barcode</div>
         <div class="scan-zone-sub" id="scan-zone-sub">No need to click anything. Just scan.</div>
     </section>
 
-    <section id="verdict-banner" class="verdict-banner verdict-idle" hidden>
-        <div class="verdict-content">
-            <h3 id="verdict-headline"></h3>
-            <p id="verdict-recommendation"></p>
+    <section id="verdict-banner" class="result verdict-idle" hidden>
+        <div class="status-row">
+            <div id="status-scanner" class="status"><span class="status-icon"></span><span class="status-name">Scanner</span><span class="status-word"></span></div>
+            <div id="status-barcode" class="status"><span class="status-icon"></span><span class="status-name">Barcode</span><span class="status-word"></span></div>
         </div>
+        <h3 id="verdict-headline"></h3>
+        <p id="verdict-recommendation"></p>
+    </section>
+
+    <section id="contents-card" class="card" hidden>
+        <h2 id="contents-title">What's in this barcode</h2>
+        <div id="contents"></div>
     </section>
 
     <section id="data-card" class="card" hidden>
         <div class="card-head-row">
-            <h2>Scanned data</h2>
+            <h2>Exactly what the scanner sent</h2>
             <div id="data-tools" class="data-tools" data-scan-ignore></div>
         </div>
-        <h3>Exactly as received</h3>
         <div id="scan-stream"></div>
         <div class="legend">
-            <span><span class="char-badge cat-terminator">CR</span> Enter / Tab / Line Feed</span>
+            <span><span class="char-badge cat-terminator">CR</span> Enter</span>
+            <span><span class="char-badge cat-terminator">TAB</span> Tab</span>
+            <span><span class="char-badge cat-terminator">LF</span> Line feed</span>
             <span><span class="char-badge cat-gs1_delimiter">GS</span> GS1 separator</span>
-            <span><span class="char-badge cat-framing">STX</span> framing</span>
             <span><span class="char-badge cat-control">FF</span> problem character</span>
             <span><span class="char-badge cat-token">[F5]</span> extra key press</span>
-            <span><span class="ch region-prefix">abc</span> prefix / suffix text</span>
-        </div>
-
-        <div id="gs1-box" hidden>
-            <h3>GS1 fields, in the order received</h3>
-            <div id="gs1-segments"></div>
-            <div id="gs1-order"></div>
-            <div id="gs1-table"></div>
         </div>
     </section>
 
     <section id="config-card" class="card" hidden>
-        <h2>Scanner configuration</h2>
+        <h2>Scanner setup</h2>
         <table class="config-table">
             <tbody>
-                <tr><th>Configured for</th><td id="cfg-configured-for"></td></tr>
-                <tr><th>Prefix (before data)</th><td id="cfg-prefix"></td></tr>
-                <tr><th>Suffix (after data)</th><td id="cfg-suffix"></td></tr>
-                <tr><th>AIM symbology IDs</th><td id="cfg-aim"></td></tr>
+                <tr><th>Set up for</th><td id="cfg-configured-for"></td></tr>
+                <tr><th>Before the data (prefix)</th><td id="cfg-prefix"></td></tr>
+                <tr><th>After the data (suffix)</th><td id="cfg-suffix"></td></tr>
+                <tr><th>Barcode type codes (AIM)</th><td id="cfg-aim"></td></tr>
                 <tr><th>GS1 separators</th><td id="cfg-gs1"></td></tr>
             </tbody>
         </table>
-
-        <h3>Profile check</h3>
-        <ul id="cfg-profiles" class="profile-checks"></ul>
 
         <div id="todo-box" class="todo-box" hidden>
             <h3>Also check</h3>
             <ul id="todo-list"></ul>
         </div>
 
-        <details class="details">
-            <summary>Show details</summary>
+        <details class="details" id="more-details">
+            <summary>More details (for IT)</summary>
+            <h3>Profile check</h3>
+            <ul id="cfg-profiles" class="profile-checks"></ul>
+            <div id="gs1-box" hidden>
+                <h3>GS1 fields, in the order received</h3>
+                <div id="gs1-segments"></div>
+                <div id="gs1-order"></div>
+                <div id="gs1-table"></div>
+            </div>
+            <h3>Bytes</h3>
             <p class="muted" id="detail-summary"></p>
             <div class="hexdump-wrap" id="detail-hex"></div>
             <p class="muted">For keystroke-level analysis, use <a href="{{ url_for('views.engineering') }}">Engineering Mode</a>.</p>
@@ -85,5 +92,19 @@
 {% endblock %}
 
 {% block scripts %}
+<script>
+// Shown only if the page's script fails to load or crashes, instead of a silently dead page.
+window.addEventListener('error', e => {
+    const box = document.getElementById('load-error');
+    if (box) { box.hidden = false; box.textContent = 'ScanWise hit an error: ' + (e.message || e.error) + '. Reload the page (Ctrl+Shift+R). If it persists, tell IT.'; }
+});
+setTimeout(() => {
+    if (!window.__ready) {
+        const box = document.getElementById('load-error');
+        box.hidden = false;
+        box.textContent = 'ScanWise did not finish loading. Reload the page (Ctrl+Shift+R). If it persists, tell IT.';
+    }
+}, 4000);
+</script>
 <script type="module" src="{{ url_for('static', filename='js/tech.js') }}"></script>
 {% endblock %}

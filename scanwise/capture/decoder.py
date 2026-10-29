@@ -14,13 +14,28 @@ via values:
   alt_numpad    Alt held + numpad digits (e.g. Alt+0029 = GS)
   function_key  F-keys, arrows, paging keys (no character)
   combo         other modifier combinations with no character meaning
+  host_key      no physical key code was delivered (Unicode injection: RDP/Citrix,
+                Windows VK_PACKET, Bluetooth/virtual keyboards); the character the
+                OS produced is used as-is
   unknown       key code not in the US table
+  lost_key      a modifier was pressed and released with no key in between (token "LOST KEY"):
+                a scanner only presses Shift/Ctrl/Alt to type a key, so that key was dropped
+                somewhere between the scanner and the browser (OS input method, remote session)
 """
 from scanwise.capture.keymap import (
     CTRL_SYMBOLS, FUNCTION_KEYS, MODIFIERS, NAMED_KEYS, NUMPAD_DIGITS, PRINTABLE,
 )
 
 CONTROL_VIA = ("enter_key", "named_key", "ctrl", "alt_numpad")
+
+# When `code` is missing, recover the physical role from `key`.
+_KEY_TO_CODE = {"Enter": "Enter", "Tab": "Tab", "Backspace": "Backspace", "Escape": "Escape", "Delete": "Delete",
+                "Shift": "ShiftLeft", "Control": "ControlLeft", "Alt": "AltLeft", "Meta": "MetaLeft", "OS": "MetaLeft"}
+
+
+def _codeless(ev):
+    code = ev.get("code") or ""
+    return code == "" or code == "Unidentified" or code.startswith("Unidentified")
 
 
 def _alt_numpad_char(digits):
@@ -48,6 +63,8 @@ class _Decoder:
         self.open = {}           # code -> unit index awaiting key-up (for dwell)
         self.unknown = []
         self.notes = []
+        self.bare_mods = {}      # modifier name -> t, pressed with no key since
+        self.lost = 0
 
     def emit(self, kind, idx, ev, via, combo, ch=None, token=None, **extra):
         unit = {
@@ -83,6 +100,12 @@ class _Decoder:
             self.notes.append(f"Alt+{seq['digits']} never saw Alt released (stream ended mid-sequence).")
 
     def down(self, i, ev):
+        if _codeless(ev):
+            key = ev.get("key") or ""
+            if key in _KEY_TO_CODE or (key.startswith("F") and key[1:].isdigit()):
+                ev = dict(ev, code=_KEY_TO_CODE.get(key, key))
+            elif len(key) == 1:
+                return self.down_host_char(i, ev, key)
         code = ev.get("code") or ""
         if ev.get("mods"):
             for k in self.mods:
@@ -90,10 +113,12 @@ class _Decoder:
 
         if code in MODIFIERS:
             self.mods[MODIFIERS[code]] = True
+            self.bare_mods.setdefault(MODIFIERS[code], ev.get("t", 0.0))
             if MODIFIERS[code] == "alt" and self.alt is None:
                 self.alt = {"digits": "", "events": [i], "t": ev.get("t", 0.0)}
             return
 
+        self.bare_mods.clear()
         m = self.mods
         # Alt + numpad digit: accumulate, commit on Alt release.
         if m["alt"] and not m["ctrl"] and code in NUMPAD_DIGITS:
@@ -148,11 +173,42 @@ class _Decoder:
         if unit is not None and code:
             self.open[code] = unit["index"]
 
+    def down_host_char(self, i, ev, key):
+        """No physical key code: use the character the OS produced (Ctrl+letter still means a control char)."""
+        if ev.get("mods"):
+            for k in self.mods:
+                self.mods[k] = bool(ev["mods"].get(k, False))
+        if self.alt is not None and self.alt["digits"]:
+            self.flush_alt()
+        self.bare_mods.clear()
+        m = self.mods
+        if m["ctrl"] and not m["alt"] and key.isalpha() and key.isascii():
+            ch = chr(ord(key.upper()) - 64)
+            via = "ctrl"
+        else:
+            ch, via = key, "host_key"
+        unit = self.emit("char", i, ev, via, f"(no key code) {key!r}" if via == "host_key" else f"Ctrl+{key}", ch=ch)
+        self.open[f"key:{key}"] = unit["index"]
+
     def up(self, i, ev):
+        if _codeless(ev):
+            key = ev.get("key") or ""
+            if key in _KEY_TO_CODE or (key.startswith("F") and key[1:].isdigit()):
+                ev = dict(ev, code=_KEY_TO_CODE.get(key, key))
+            elif f"key:{key}" in self.open:
+                u = self.units[self.open.pop(f"key:{key}")]
+                u["dwell_ms"] = round(ev.get("t", 0.0) - u["t"], 3)
+                u["event_indices"].append(i)
+                return
         code = ev.get("code") or ""
         if code in MODIFIERS:
             name = MODIFIERS[code]
             self.mods[name] = False
+            if name in self.bare_mods and not any(self.mods.values()):
+                t = self.bare_mods.pop(name)
+                self.bare_mods.clear()
+                self.lost += 1
+                self.emit("token", i, {"t": t}, "lost_key", f"{name.capitalize()} pressed alone", token="LOST KEY")
             if name == "alt":
                 self.flush_alt(i)
             return
@@ -218,6 +274,8 @@ def decode_events(events):
                 for u in mismatches[:10]
             ],
             "unknown_keys": d.unknown,
+            "codeless_count": via_counts.get("host_key", 0),
+            "lost_key_count": d.lost,
             "tokens": [u["token"] for u in units if u["kind"] == "token"],
             "notes": d.notes,
         },

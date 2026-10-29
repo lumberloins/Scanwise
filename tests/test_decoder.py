@@ -127,3 +127,49 @@ def test_every_c0_control_has_a_badge():
     assert describe_char(0xA0)["abbr"] == "NBSP"
     assert describe_char(0xFEFF)["abbr"] == "BOM"
     assert describe_char("A")["visible"]
+
+
+def _codeless(text, ctrl_letters=""):
+    ev, t = [], 0.0
+    for ch in text:
+        t += 2
+        ev += [{"t": t, "type": "down", "code": "", "key": ch, "mods": {}}, {"t": t + 1, "type": "up", "code": "", "key": ch, "mods": {}}]
+    return ev
+
+
+def test_codeless_events_use_host_characters():
+    # RDP/Citrix/VK_PACKET style: no physical code, only the produced character.
+    ev = _codeless("0100301234567896" + "10LOT" + "\x1d" + "21SER")
+    ev.append({"t": 99, "type": "down", "code": "", "key": "Enter", "mods": {}})
+    res = decode_events(ev)
+    assert res["text"] == "0100301234567896" "10LOT\x1d21SER\r"
+    assert res["summary"]["codeless_count"] == 27
+    assert res["summary"]["unknown_keys"] == []
+
+
+def test_codeless_ctrl_letter_and_unidentified_code():
+    ev = [{"t": 0, "type": "down", "code": "Unidentified", "key": "j", "mods": {"ctrl": True}},
+          {"t": 1, "type": "down", "code": "", "key": "Tab", "mods": {}}]
+    assert decode_events(ev)["text"] == "\n\t"
+
+
+def test_shift_pressed_alone_is_a_lost_key():
+    # From a real export: the I of "IS2205993" was dropped; only Shift down/up arrived.
+    s = KeySeq().mod_down("ShiftLeft").mod_up("ShiftLeft").type("S2")
+    res = decode_events(s.events)
+    assert res["text"] == "S2"
+    assert res["summary"]["lost_key_count"] == 1
+    assert res["units"][0]["token"] == "LOST KEY" and res["units"][0]["via"] == "lost_key"
+
+
+def test_normal_shift_and_ctrl_and_alt_are_not_lost_keys():
+    s = KeySeq().type("AbC").ctrl("BracketRight").alt("0029").enter()
+    assert decode_events(s.events)["summary"]["lost_key_count"] == 0
+
+
+def test_lost_key_finding_is_the_headline():
+    from scanwise.analysis import analyze
+    s = KeySeq().type("0").mod_down("ShiftLeft").mod_up("ShiftLeft").type("S").enter()
+    res = analyze(s.events)
+    assert res["findings"][0]["id"] == "keys_lost"
+    assert res["verdict"]["category"] != "PASS"

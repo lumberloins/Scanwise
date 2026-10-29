@@ -212,6 +212,7 @@ This document.
 | 8 Agent integration | ✅ Complete |
 | 9 Docs/cleanup | ✅ Complete |
 | 10 GS1 detection + data display | ✅ Complete |
+| 11 Tech Mode simplification + components | ✅ Complete |
 
 ## 7. Environment notes
 
@@ -353,3 +354,45 @@ This document.
   first, since that's where order-dependent EMR parsers break), and a field table. Engineering Mode has the
   same field view under the byte stream and a fuller GS1 table (format spec, position, terminator, checks,
   detection reason). **pytest 70 passed** (new `tests/test_gs1.py`), **e2e 21 passed**.
+- **Phase 11** (2026-10-28, after feedback "Tech Mode broken: no GS1, datastream not shown; must be simple
+  enough to show a nurse; show GTIN/serial/expiry/lot"). Investigation: the live :5000 server was running
+  current code and passed the Tech e2e suite with synthetic keys; static files are `no-cache`; 20k fuzzed
+  payloads produced no server errors. Reproduced a real failure mode: keystrokes that arrive **without a
+  physical key code** (`code: ""`, as with RDP/Citrix, Windows VK_PACKET Unicode injection, Bluetooth/virtual
+  keyboards, scanner "Unicode" modes) decoded to *nothing*, so no data and no GS1. The decoder now falls
+  back to the OS-produced character (`via: host_key`; Ctrl+letter still means a control char; named keys
+  mapped), capture records `keyCode` (229 IME / 231 VK_PACKET), and an info finding reports it. **Not
+  confirmed** to be the user's cause (no hardware here). Tech Mode rebuilt: Scanner / Barcode status pills
+  + one sentence; **What's in this barcode** component cards (Product/GTIN with check digit + NDC from
+  03-prefixed GTINs, Expiration as a readable date + EXPIRED/Not expired, Lot, Serial, then others; plain
+  data card for non-GS1); **Exactly what the scanner sent**; Scanner setup; technical detail under "More
+  details (for IT)". "Nothing readable" scans and script/load failures show explicit messages instead of
+  a blank page. Generic matches now read "No prefix, CR (Enter) after each scan (matches Meditech
+  Expanse)". Engineering Mode gets the same component cards. **pytest 72, e2e 24 passed** (new: component
+  cards + pills, code-less keystroke GS1 scan, nothing-readable message).
+- **Phase 12** (2026-10-29, after feedback "not displaying the full data stream"). Cause reproduced: capture
+  ended a scan after 150 ms of silence, so a scanner that stalls mid-barcode (Bluetooth buffering,
+  keystroke-delay settings, a busy PC, slow Alt+numpad sequences) was split into several "scans", and Tech
+  Mode showed only the last piece. Capture now ends a scan after `gapMs` only when the last key was a
+  suffix key (Enter, NumpadEnter, Tab, Ctrl+M/J/I); otherwise it waits `idleMs` (1000 ms). Tech Mode also
+  ignores an analysis response that arrives after a newer scan started. **pytest 72, e2e 25 passed** (new:
+  barcode with two 450 ms stalls stays one scan and the full stream is shown).
+- **Phase 13** (2026-10-29, "still broken; export shows only IS of IS2205993"). The user's exports
+  (`~/Downloads/scanwise-*.json`) show the keys never reached the page: Shift down/up with no key where the
+  `I` should be, and nothing after the last Alt+0029, all within about 90 ms. The machine runs Wayland +
+  Firefox + **fcitx5** (`GTK_IM_MODULE=fcitx`), which routes every keystroke through an input method.
+  That's the likely cause, unconfirmed. ScanWise could not see the loss before. The decoder now emits a
+  `LOST KEY` token (via `lost_key`) wherever a modifier is pressed and released alone, `lost_key_count`
+  is in the summary, and `keys_lost` (error, ENVIRONMENT_FAULT) is the top finding, so an incomplete
+  scan is never presented as complete. Characters dropped *without* a modifier cannot be seen from the
+  browser; the native agent in Both mode is the ground truth. **pytest 75, e2e 25 passed.**
+- **Phase 14** (2026-10-29). Root cause of "only IS shows" found with a raw key-log page
+  (`/static/dev/keylog.html`): on this Firefox 155 / Wayland / fcitx5 machine, keystrokes reach a page
+  reliably **only while a text field has focus**. With focus on the bare page, both unblocked and blocked,
+  only `Shift I Shift S` of `IS2216121` arrived. In a textarea every key arrived. Capture now uses a hidden,
+  always-focused `<textarea id="scan-sink">` (refocused after clicks; not while a real form control
+  is in use or text is selected). Plain character keys are allowed to type into it; everything else is
+  still blocked. Text that arrives as `input`/`compositionend` with no matching key press is recorded as
+  code-less key events (`from_input`). The sink is emptied after each scan. Added `tools/evdump.py` (raw
+  evdev dump, needs root). **pytest 75, e2e 28 passed** (new: sink focus, real text-producing keys
+  without duplicates, input-only text).

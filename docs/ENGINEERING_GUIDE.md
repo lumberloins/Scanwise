@@ -92,6 +92,8 @@ ScanWise locally (`http://localhost:5000`).
   the browser received within 1 s. If the browser got nothing, or a different stream, that becomes the
   headline finding and the **Compare** tab shows the exact lost/extra characters. Leave **Grab off** in
   Both mode (a grab hides the keys from the browser).
+- **Scan gap**: a scan ends this long after a suffix key (Enter, Tab, LF). With no suffix key it ends
+  after 1000 ms (or the gap, if larger), so a scanner that pauses mid-barcode isn't split into pieces.
 - **Byte stream**: click any character to highlight it in every panel.
 - **Characters**: one row per character or token: hex, decimal, name, category, region
   (prefix/aim/data/suffix), how it was produced, the key combo, time, Δ from the previous character, dwell,

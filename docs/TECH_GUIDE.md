@@ -9,30 +9,24 @@
    *Detect automatically* if you just want to know what the scanner is doing.
 3. Scan any barcode. You don't need to click a text box: the whole page listens.
 
-## Reading the result
+## Reading the result (top to bottom)
 
-| Row | What it tells you |
-|---|---|
-| **Configured for** | Which known setup the scanner matches (Epic, Cerner, Meditech), or what it does instead. |
-| **Prefix** | What the scanner adds *before* the barcode (e.g. `/DATA/`), or None. |
-| **Suffix** | What it adds *after* the barcode: **CR** = Enter, **TAB** = Tab, **CR LF** = Enter + Line Feed, or None. |
-| **AIM symbology IDs** | On/Off. When on, the scan starts with a code like `]d2` that says what kind of barcode it was. |
-| **GS1 separators** | For medication/device barcodes: *Present* is good. *Missing* means a separator is missing. |
-| **Profile check** | ✓ / ✗ for every known setup, with the reason when it doesn't match. |
+1. **Scanner** and **Barcode** pills, plus one sentence. Show this to the nurse:
+   - ✓ Scanner **Working** · ✓ Barcode **Read OK** → both are fine. If the EMR still rejects the
+     barcode, the problem is in the EMR or its settings.
+   - ! Scanner **Needs setup** → the scanner works but is programmed wrong (the sentence says what).
+   - ✗ Barcode **Problem with label** → the scanner is fine; the printed barcode is bad.
+2. **What's in this barcode**: the barcode's contents in plain words. For medication and device
+   barcodes (GS1): **Product (GTIN)**, plus the NDC when the GTIN carries one; **Expiration date**,
+   marked EXPIRED in red if past; **Lot / Batch**; **Serial number**; and anything else on the label.
+   For wristbands and other barcodes: the data itself.
+3. **Exactly what the scanner sent**: every character in order, with hidden characters as coloured tags:
+   🟩 `CR` Enter · `TAB` Tab · `LF` Line feed · 🟦 `GS` GS1 separator · 🟥 `FF` `NUL` `ESC` … problem
+   characters · 🟪 `[F5]` an extra key press.
+4. **Scanner setup**: prefix, suffix (Enter / Tab / Enter + Line feed), barcode type codes (AIM), GS1
+   separators.
 
-**What the scanner typed** shows the data with every hidden character as a coloured tag:
-
-- 🟩 green `CR` `LF` `TAB`: Enter / Line Feed / Tab (normal suffixes)
-- 🟦 blue `GS`: GS1 separator (normal in medication barcodes)
-- 🟨 yellow `STX` `ETX`: framing characters (usually a mis-programmed scanner)
-- 🟥 red `FF` `NUL` `ESC` `BEL` …: problem characters
-- 🟪 purple `[F5]` `[PageDown]`: the scanner pressed an extra key
-
-## The banner
-
-- **Green PASS**: the scanner and barcode are fine. The problem is elsewhere (the application or the workstation).
-- **Red / amber**: read the sentence under the headline. It says what to do, e.g. *"Program the scanner for
-  Epic: prefix "/DATA/", suffix CR (Enter)."*
+Everything technical (profile checks, GS1 fields in received order, bytes) is under **More details (for IT)**.
 
 ## If something odd happens
 
@@ -41,5 +35,8 @@
 - **"Host keyboard layout doesn't match"**: the PC's keyboard language differs from the scanner's
   keyboard-country setting.
 - **"Letter case inverted"**: Caps Lock is on.
+- **"The scanner sent key presses, but no characters could be read"**: open Engineering Mode, scan again,
+  use **Export scan**, and send the file to IT.
+- **A red "ScanWise hit an error" / "did not finish loading" box**: reload with Ctrl+Shift+R.
 
 For anything deeper, use **Engineering Mode** or send the scanner to the engineering team.

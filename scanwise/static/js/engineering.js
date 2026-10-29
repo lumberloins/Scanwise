@@ -7,7 +7,7 @@
 import { KeyCapture, enableKeyboardLock, disableKeyboardLock } from './core/capture.js';
 import { analyze } from './core/api.js';
 import { AgentClient } from './agent-client.js';
-import { el, clear, streamView, unitNode, hexDump, copyButton, unitsToVisualText, unitsToHex, fmtMs, segmentedView, gs1OrderLine } from './core/render.js';
+import { el, clear, streamView, unitNode, hexDump, copyButton, unitsToVisualText, unitsToHex, fmtMs, segmentedView, gs1OrderLine, componentsView } from './core/render.js';
 
 const $ = id => document.getElementById(id);
 const HISTORY_KEY = 'scanwise.engineering.history.v1';
@@ -122,8 +122,11 @@ export async function ingest({ events, meta = {}, source = { kind: 'browser' }, 
 
 function renderAll() {
     const { res } = state.current;
-    for (const id of ['summary', 'stream-card', 'tabs-card']) $(id).hidden = false;
+    for (const id of ['summary', 'contents-card', 'stream-card', 'tabs-card']) $(id).hidden = false;
     renderSummary();
+    const g = res.gs1_data;
+    $('contents-title').textContent = g && g.elements.length ? 'Barcode contents (GS1)' : 'Barcode contents';
+    clear($('contents'), componentsView(res));
     renderStream();
     renderChars(res);
     renderEvents();

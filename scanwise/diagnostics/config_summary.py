@@ -36,7 +36,10 @@ def build_config_summary(framing, symbology, gs1, anomalies, decode=None):
     suffix_words = framing.get("suffix_words", "None")
     aim_words = f"On ({symbology.get('aim_id')} = {symbology.get('symbology_name')})" if has_aim else "Off"
 
-    if matched:
+    if matched and not framing.get("prefix_detected"):
+        # Profiles without a prefix match any generic scanner with that suffix: say what it does.
+        configured_for = f"No prefix, {suffix_words} after each scan (matches {' / '.join(r['name'] for r in matched)})"
+    elif matched:
         configured_for = " / ".join(r["name"] for r in matched)
     elif not framing.get("prefix_detected") and not framing.get("suffix_detected"):
         configured_for = "No prefix or suffix (raw data only)"
