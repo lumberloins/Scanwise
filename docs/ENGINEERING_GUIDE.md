@@ -106,7 +106,14 @@ ScanWise locally (`http://localhost:5000`).
   method counts, layout mismatches, GS1 element table with check-digit/date/length checks.
 - **Findings**: every finding with evidence, in both engineering and tech wording.
 - **Compare**: agent-vs-browser for the current scan, plus any two history scans.
-- **Session history**: last 50 scans in this browser. **Export** writes a replay file:
+- **Session history**: last 50 scans, **in memory only**. Nothing goes to disk, and it's gone on reload. Older
+  versions saved history in `localStorage`; that copy is deleted when the page loads.
+- **Export** is **redacted by default**: every data character becomes `X` / `x` / `0`, at the key-event level.
+  Kept: control characters, key order, modifiers, timing, how each character was produced, AIM IDs, GS1 AI
+  codes and separators, and a prefix/suffix confirmed by an EMR profile. Punctuation and spaces are kept.
+  Check digits and dates won't validate in a redacted file. **With data…** exports the full contents and
+  needs a second click; only use it on barcodes with no patient information. Files are named
+  `scanwise-redacted-*.json` or `scanwise-FULL-DATA-*.json`. Either way the export is a replay file:
 
 ```json
 {"format": "scanwise-capture", "version": 1, "scans": [{"events": [...], "meta": {...}, "source": {...}}]}

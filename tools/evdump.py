@@ -5,6 +5,8 @@ before the compositor, input method or browser touched it.
 
     sudo python3 tools/evdump.py /dev/input/by-id/<scanner>-event-kbd [seconds] [out.jsonl]
 
+The output holds the full scanned data: use test barcodes, never wristbands or labels with PHI.
+
 Scan during the window (default 10 s). Writes one JSON object per key event
 (t ms, type down/up/repeat, Linux key code and name, MSC_SCAN usage if sent).
 """

@@ -85,6 +85,7 @@ export class KeyCapture {
         this._onInput = this._onInput.bind(this);
         this._onCompositionEnd = this._onCompositionEnd.bind(this);
         this._onFocusOut = this._onFocusOut.bind(this);
+        this._onPageHide = () => { if (this.sink) this.sink.value = ''; };
         this.sink = null;
         this.pendingKeys = [];   // printable keys whose text has not arrived as input yet
     }
@@ -120,6 +121,7 @@ export class KeyCapture {
         document.addEventListener('focusout', this._onFocusOut);
         window.addEventListener('focus', this._onFocusOut);
         document.addEventListener('pointerup', this._onFocusOut);
+        window.addEventListener('pagehide', this._onPageHide);
         this.focusSink();
     }
 
@@ -134,6 +136,7 @@ export class KeyCapture {
         document.removeEventListener('focusout', this._onFocusOut);
         window.removeEventListener('focus', this._onFocusOut);
         document.removeEventListener('pointerup', this._onFocusOut);
+        window.removeEventListener('pagehide', this._onPageHide);
         if (this.sink) {
             this.sink.removeEventListener('input', this._onInput);
             this.sink.removeEventListener('compositionend', this._onCompositionEnd);
@@ -186,7 +189,9 @@ export class KeyCapture {
         }
         if (e.isComposing || e.inputType === 'insertCompositionText') return;  // committed text comes via compositionend
         this._ingestText(data, e.timeStamp);
-        if (sink.value.length > 4096) sink.value = '';
+        // The text is already recorded; never leave scanned data sitting in a form field (browsers
+        // can save field contents to disk for session restore).
+        sink.value = '';
     }
 
     _onCompositionEnd(e) {

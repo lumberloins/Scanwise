@@ -36,7 +36,14 @@ Everything technical (profile checks, GS1 fields in received order, bytes) is un
   keyboard-country setting.
 - **"Letter case inverted"**: Caps Lock is on.
 - **"The scanner sent key presses, but no characters could be read"**: open Engineering Mode, scan again,
-  use **Export scan**, and send the file to IT.
+  use **Export scan (redacted)**, and send the file to IT. Redacted files contain no patient information.
 - **A red "ScanWise hit an error" / "did not finish loading" box**: reload with Ctrl+Shift+R.
 
 For anything deeper, use **Engineering Mode** or send the scanner to the engineering team.
+
+## Patient information (PHI)
+
+You may scan wristbands and labels that carry patient information. ScanWise never saves a scan: results
+exist only on screen and are gone when you reload or close the page. Exports from Engineering Mode remove
+the data unless someone deliberately chooses **With data…**. Don't use that option, or the diagnostic
+key-log page, with a patient barcode.

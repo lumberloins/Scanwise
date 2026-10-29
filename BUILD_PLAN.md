@@ -396,3 +396,14 @@ This document.
   code-less key events (`from_input`). The sink is emptied after each scan. Added `tools/evdump.py` (raw
   evdev dump, needs root). **pytest 75, e2e 28 passed** (new: sink focus, real text-producing keys
   without duplicates, input-only text).
+- **Phase 15** (2026-10-29, "secure against storing PHI"). Audit: the only on-disk copy was Engineering
+  history in `localStorage` (50 full scans). Now: history is memory-only and legacy `localStorage` history
+  is purged on load. Exports are redacted by default through `/api/redact` (`scanwise/redact.py`: visible
+  data characters become X/x/0 at the key-event level, including Alt+numpad and code-less keys, while
+  AIM, GS1 AIs/separators, controls, timing and profile-confirmed framing are kept). Full-data export
+  needs a second click and is named `FULL-DATA`. API responses are `no-store`. The 500 handler logs the
+  exception type and traceback without the message. The capture sink is emptied on every input and on
+  pagehide. Diagnostic tools carry PHI warnings. The server never wrote scans to disk; the agent logs
+  no key data. **pytest 82, e2e 30 passed** (new `tests/test_redact.py`; e2e: storage audit, legacy
+  purge, export defaults).
+

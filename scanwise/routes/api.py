@@ -33,6 +33,18 @@ def get_profiles():
     return jsonify({"status": "success", "profiles": load_profiles()}), 200
 
 
+@api_bp.route('/redact', methods=['POST'])
+def redact_scan():
+    """Body: {"key_events": [...], "profile_id"?}. Returns the events with PHI-capable data replaced. Nothing is stored."""
+    from scanwise.redact import redact_events
+    data = request.get_json(silent=True) or {}
+    key_events = data.get("key_events")
+    if not isinstance(key_events, list) or len(key_events) > MAX_EVENTS or not all(isinstance(e, dict) for e in key_events):
+        return jsonify({"status": "error", "error": f"key_events must be a list of at most {MAX_EVENTS} objects"}), 400
+    events, count = redact_events(key_events, profiles=load_profiles(), profile_id=data.get("profile_id"))
+    return jsonify({"status": "success", "key_events": events, "redacted_chars": count}), 200
+
+
 @api_bp.route('/analyze', methods=['POST'])
 def analyze_scan():
     """

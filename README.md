@@ -12,6 +12,24 @@ one was produced.
 
 Architecture and build history: `BUILD_PLAN.md`. Original product spec: `vision.md`.
 
+## Patient information (PHI)
+
+Field techs may scan wristbands and labels that carry PHI. ScanWise is built not to store it:
+
+- **Server:** analyses each scan in memory and writes nothing to disk. API responses are sent with
+  `Cache-Control: no-store`. Unhandled errors are logged with the exception type and code location only;
+  the message, which could quote scan data, is withheld.
+- **Browser:** Tech Mode keeps nothing. Engineering Mode history is in memory only, and any history saved
+  by older versions in `localStorage` is deleted on load. The hidden text box used for capture is emptied
+  as each character arrives and when the page is hidden.
+- **Exports:** redacted by default (`/api/redact`: data characters become `X`/`x`/`0`, with structure,
+  controls, timing, AIM and GS1 AIs kept). A full-data export takes a deliberate second click, and its
+  file name says `FULL-DATA`.
+- **Diagnostic tools** (`static/dev/keylog.html`, `tools/evdump.py`) record full data and are marked
+  "test barcodes only".
+
+The **Copy** buttons put the shown data on the clipboard, and results stay on screen until cleared.
+
 ## Requirements
 
 - Python 3.10+, Flask, Waitress (`requirements.txt`)

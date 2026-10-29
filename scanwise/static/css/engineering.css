@@ -110,3 +110,7 @@ body.eng .app-main { max-width: 1400px; }
 .url-input { width: 13rem; background: var(--bg-card); color: var(--text-main); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.45rem 0.6rem; font-family: var(--font-mono); font-size: 0.8rem; }
 .agent-msg { flex-basis: 100%; font-size: 0.8rem; }
 .eng-status > div:first-child { flex: 1 1 28rem; }
+
+/* Export: redacted by default; "With data" asks for a second click. */
+.export-buttons { display: inline-flex; gap: 0.35rem; }
+.btn-danger, .btn-danger:hover { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border-color: rgba(239, 68, 68, 0.6); }

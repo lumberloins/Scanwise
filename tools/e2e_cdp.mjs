@@ -179,6 +179,30 @@ export const suites = {
         await waitFor(() => cdp.eval('window.__ready === true'), { what: 'engineering ready' });
         await cdp.eval("localStorage.clear(); window.scanwise.state.history = [];");
 
+        await test('PHI: old stored history is deleted on load; new scans never touch storage', async () => {
+            await cdp.eval("localStorage.setItem('scanwise.engineering.history.v1', '[{\"id\":\"old\"}]')");
+            await cdp.navigate(`${base}/engineering`);
+            await waitFor(() => cdp.eval('window.__ready === true'), { what: 'engineering ready' });
+            eq(await cdp.eval("localStorage.getItem('scanwise.engineering.history.v1')"), null, 'legacy history purged');
+            await scanAndWait(cdp, s => s.type('MRN0042SMITH').enter());
+            const stored = await cdp.eval("JSON.stringify({ ...localStorage }) + JSON.stringify({ ...sessionStorage })");
+            assert(!stored.includes('SMITH') && !stored.includes('KeyS'), `scan data in browser storage: ${stored}`);
+            eq(await cdp.eval("document.getElementById('scan-sink').value"), '', 'hidden text box empty');
+            eq(await cdp.eval('window.scanwise.state.history.length'), 1, 'history kept in memory');
+        });
+
+        await test('PHI: exports are redacted by default; full data needs a second click', async () => {
+            const labels = await cdp.eval("[...document.querySelectorAll('.export-buttons button')].map(b => b.textContent)");
+            assert(labels.includes('Export scan (redacted)') && labels.includes('Export all (redacted)'), `labels: ${labels}`);
+            const full = "[...document.querySelectorAll('#stream-tools .export-buttons button')][1]";
+            await cdp.eval(`${full}.click()`);
+            assert((await cdp.eval(`${full}.textContent`)).includes('Click again'), 'first click only asks to confirm');
+            const red = await cdp.eval("fetch('/api/redact', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key_events: window.scanwise.state.current.events }) }).then(r => r.json())");
+            const text = (await cdp.eval(`fetch('/api/analyze', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key_events: ${JSON.stringify(red.key_events)} }) }).then(r => r.json())`)).text;
+            eq(text, 'XXX0000XXXXX\r', 'redacted file decodes to placeholders');
+            await cdp.eval("localStorage.clear(); window.scanwise.state.history = [];");
+        });
+
         await test('Alt+numpad GS, FF, F5 token: stream, char table, key events', async () => {
             const r = await scanAndWait(cdp, s => s.type('AB').alt('0029').type('CD').ctrl('KeyL').key('F5').enter());
             eq(r.text, 'AB\x1dCD\x0c\r', 'decoded text');

@@ -95,12 +95,15 @@
         <div class="card-head">
             <h2>Session history</h2>
             <div class="card-tools" data-scan-ignore>
-                <button id="export-all-btn" class="btn btn-secondary btn-small" type="button">Export all</button>
+                <span id="export-all-slot"></span>
                 <label class="btn btn-secondary btn-small file-btn">Import…<input id="import-input" type="file" accept="application/json,.json" hidden></label>
                 <button id="clear-history-btn" class="btn btn-secondary btn-small" type="button">Clear history</button>
             </div>
         </div>
-        <p class="muted small">Stored in this browser only. Exports are replay files: re-analysable here and playable by the native agent (<code>--replay</code>).</p>
+        <p class="muted small">Kept in memory only: nothing is saved to disk, and history is gone when you close or reload
+            this page. Exports are replay files (re-analysable here, playable by the native agent with <code>--replay</code>).
+            <strong>Exports are redacted by default</strong>: data characters become X / x / 0, while control characters,
+            order, timing, AIM IDs and GS1 AIs are kept. Use <em>With data…</em> only for barcodes with no patient information.</p>
         <div id="history-box"></div>
     </section>
 </div>

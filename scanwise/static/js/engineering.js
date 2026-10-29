@@ -5,12 +5,14 @@
  * built in; the native agent plugs in through the same call (agent-client.js).
  */
 import { KeyCapture, enableKeyboardLock, disableKeyboardLock } from './core/capture.js';
-import { analyze } from './core/api.js';
+import { analyze, redact } from './core/api.js';
 import { AgentClient } from './agent-client.js';
 import { el, clear, streamView, unitNode, hexDump, copyButton, unitsToVisualText, unitsToHex, fmtMs, segmentedView, gs1OrderLine, componentsView } from './core/render.js';
 
 const $ = id => document.getElementById(id);
-const HISTORY_KEY = 'scanwise.engineering.history.v1';
+// Scans can contain PHI (wristbands, labels), so history lives in memory only: it is gone when the
+// page is closed or reloaded. Older versions kept it in localStorage; that copy is deleted on load.
+const LEGACY_HISTORY_KEYS = ['scanwise.engineering.history.v1'];
 const HISTORY_MAX = 50;
 const EXPORT_FORMAT = 'scanwise-capture';
 
@@ -22,7 +24,7 @@ const VIA_WORDS = {
 const state = {
     current: null,      // {res, events, meta, source, id}
     selected: null,
-    history: loadHistory(),
+    history: [],
     cache: new Map(),   // history id -> analysis result
     liveCount: 0,
     mode: 'browser',    // browser | agent | both
@@ -179,7 +181,7 @@ function renderStream() {
         copyButton('Copy visual', () => unitsToVisualText(res.units)),
         copyButton('Copy hex', () => res.text_hex),
         copyButton('Copy JSON string', () => json),
-        el('button', { class: 'btn btn-secondary btn-small', type: 'button', text: 'Export scan', onclick: e => { e.currentTarget.blur(); exportScans([state.current]); } }));
+        exportButtons(() => [state.current], 'Export scan'));
 }
 
 function relT(t) {
@@ -447,11 +449,18 @@ document.querySelectorAll('.eng-tab').forEach(btn => btn.addEventListener('click
 
 // ---------------------------------------------------------------- history, export, import
 
-function loadHistory() {
-    try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch { return []; }
+function purgeStoredScans() {
+    try {
+        for (const k of LEGACY_HISTORY_KEYS) localStorage.removeItem(k);
+        sessionStorage.clear();
+    } catch { /* storage blocked */ }
 }
+purgeStoredScans();
+
 function saveHistory() {
-    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(state.history)); } catch { /* storage full or blocked */ }
+    // Memory only (see LEGACY_HISTORY_KEYS); drop cached analyses of deleted scans.
+    const ids = new Set(state.history.map(h => h.id));
+    for (const id of state.cache.keys()) if (!ids.has(id)) state.cache.delete(id);
 }
 
 function addHistory(entry) {
@@ -490,19 +499,54 @@ function renderHistory() {
 
 function showTab(name) { document.querySelector(`.eng-tab[data-tab="${name}"]`)?.click(); }
 
-function exportScans(entries) {
-    const doc = {
-        format: EXPORT_FORMAT, version: 1, exported_at: new Date().toISOString(),
-        scans: entries.map(e => ({ id: e.id, saved_at: e.savedAt || new Date().toISOString(), source: e.source, meta: e.meta, events: e.events })),
-    };
+/**
+ * Export buttons: redacted by default (safe to share). "With data" needs a second click within
+ * 5 s, because the file then holds the full barcode contents, which may be PHI.
+ */
+function exportButtons(getEntries, label) {
+    const safe = el('button', { class: 'btn btn-secondary btn-small', type: 'button', text: `${label} (redacted)`,
+        title: 'Data characters replaced with X / x / 0. Control characters, order, timing, AIM and GS1 AIs are kept.',
+        onclick: e => { e.currentTarget.blur(); exportScans(getEntries(), { redacted: true }); } });
+    const full = el('button', { class: 'btn btn-secondary btn-small', type: 'button', text: 'With data…',
+        title: 'Exports the full barcode contents. Do not use for wristbands or labels with patient information.' });
+    let armed = null;
+    full.addEventListener('click', e => {
+        e.currentTarget.blur();
+        if (!armed) {
+            full.textContent = 'May contain PHI. Click again to export';
+            full.classList.add('btn-danger');
+            armed = setTimeout(() => { armed = null; full.textContent = 'With data…'; full.classList.remove('btn-danger'); }, 5000);
+            return;
+        }
+        clearTimeout(armed); armed = null;
+        full.textContent = 'With data…'; full.classList.remove('btn-danger');
+        exportScans(getEntries(), { redacted: false });
+    });
+    return el('span', { class: 'export-buttons' }, safe, full);
+}
+
+async function exportScans(entries, { redacted = true } = {}) {
+    entries = entries.filter(Boolean);
+    if (!entries.length) return;
+    let scans;
+    try {
+        scans = await Promise.all(entries.map(async e => ({
+            id: e.id, saved_at: e.savedAt || new Date().toISOString(), source: e.source, meta: e.meta,
+            redacted, events: redacted ? (await redact(e.events, { profileId: profileSelect.value })).key_events : e.events,
+        })));
+    } catch (err) {
+        clear($('history-box'), el('p', { class: 'err-text', text: `Export failed: ${err.message || err}` }));
+        return;
+    }
+    const doc = { format: EXPORT_FORMAT, version: 1, exported_at: new Date().toISOString(), redacted, scans };
     const blob = new Blob([JSON.stringify(doc, null, 1)], { type: 'application/json' });
-    const a = el('a', { href: URL.createObjectURL(blob), download: `scanwise-${new Date().toISOString().replace(/[:.]/g, '-')}.json` });
+    const a = el('a', { href: URL.createObjectURL(blob), download: `scanwise-${redacted ? 'redacted' : 'FULL-DATA'}-${new Date().toISOString().replace(/[:.]/g, '-')}.json` });
     document.body.appendChild(a);
     a.click();
     setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
 }
 
-$('export-all-btn').addEventListener('click', e => { e.currentTarget.blur(); exportScans(state.history); });
+$('export-all-slot').replaceWith(exportButtons(() => state.history, 'Export all'));
 $('clear-history-btn').addEventListener('click', e => { e.currentTarget.blur(); state.history = []; saveHistory(); renderHistory(); });
 $('import-input').addEventListener('change', async e => {
     const file = e.target.files[0];
